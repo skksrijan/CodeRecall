@@ -24,6 +24,9 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
   const [saving, setSaving] = useState(false);
   const [existingTags, setExistingTags] = useState<{ label: string; value: string }[]>([]);
 
+  const [leetcodeId, setLeetcodeId] = useState('');
+  const [autofilling, setAutofilling] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       fetchTags();
@@ -35,6 +38,7 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
         setNotes(existingProblem.notes || '');
         setUserSolution(existingProblem.userSolution || '');
         setLanguage(existingProblem.language || 'javascript');
+        setLeetcodeId('');
       } else {
         setTitle('');
         setLeetcodeUrl('');
@@ -43,6 +47,7 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
         setNotes('');
         setUserSolution('');
         setLanguage('javascript');
+        setLeetcodeId('');
       }
     }
   }, [isOpen, existingProblem]);
@@ -58,6 +63,29 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleAutofill = async () => {
+    if (!leetcodeId) return;
+    setAutofilling(true);
+    try {
+      const res = await fetch(`/api/leetcode?id=${leetcodeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        if (res.status === 404) throw new Error('Problem not found');
+        throw new Error('Failed to fetch from LeetCode');
+      }
+      const data = await res.json();
+      setTitle(data.title);
+      setDifficulty(data.difficulty);
+      setLeetcodeUrl(data.url);
+      toast.success('Autofilled successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Error autofilling');
+    } finally {
+      setAutofilling(false);
     }
   };
 
@@ -135,6 +163,27 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
       <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl p-6 my-8">
         <h2 className="text-2xl font-bold mb-6">{existingProblem ? 'Edit Problem' : 'Add Problem'}</h2>
         
+        <div className="mb-6 bg-muted-text/5 p-4 rounded border border-muted-text/10 flex items-end gap-2">
+          <div className="flex-grow">
+            <label className="block text-sm font-medium mb-1">Autofill from LeetCode ID</label>
+            <input
+              type="number"
+              placeholder="e.g. 1 for Two Sum"
+              className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              value={leetcodeId}
+              onChange={(e) => setLeetcodeId(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleAutofill}
+            disabled={autofilling || !leetcodeId}
+            className="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90 disabled:opacity-50 text-sm whitespace-nowrap"
+          >
+            {autofilling ? 'Fetching...' : 'Autofill'}
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
