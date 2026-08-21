@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String?
+  createdAt DateTime  @default(now())
+  plan      Plan      @default(FREE)
+  problems  Problem[]
+  decks     Deck[]
+  reviews   Review[]
+}
+
+model Deck {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  problems    Problem[]
+}
+
+model Problem {
+  id           String       @id @default(uuid())
+  title        String
+  leetcodeUrl  String?
+  difficulty   Difficulty
+  notes        String?
+  userSolution String?
+  language     String?
+  
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  decks        Deck[]
+  tags         Tag[]
+  
+  reviews      Review[]
+  reviewState  ReviewState?
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+model Tag {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  problems Problem[]
+}
+
+model Review {
+  id               String   @id @default(uuid())
+  problemId        String
+  problem          Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedAt       DateTime @default(now())
+  quality          Int      // 0-5
+  previousInterval Int
+  newInterval      Int
+  easeFactor       Float
+  reviewCount      Int
+}
+
+model ReviewState {
+  id             String    @id @default(uuid())
+  problemId      String    @unique
+  problem        Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  easeFactor     Float     @default(2.5)
+  interval       Int       // in days
+  repetitions    Int
+  nextReviewDate DateTime
+  lastReviewedAt DateTime?
+
+  @@index([nextReviewDate])
+}
