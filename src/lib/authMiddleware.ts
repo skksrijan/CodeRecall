@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth } from '../../firebaseAdmin';
 import prisma from '../../prisma_client';
+import logger from './logger';
 
 export async function verifyAuth(req: Request) {
   try {
@@ -20,12 +21,13 @@ export async function verifyAuth(req: Request) {
     });
 
     if (!user) {
+      logger.warn({ email: decodedToken.email }, 'User token valid but not found in Prisma database');
       return { error: 'User not found in database', status: 404 };
     }
 
     return { user };
   } catch (error: any) {
-    console.error('Error verifying auth token:', error);
+    logger.error({ err: error }, 'Error verifying auth token');
     return { error: 'Unauthorized', status: 401 };
   }
 }

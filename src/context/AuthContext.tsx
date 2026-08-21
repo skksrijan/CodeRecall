@@ -56,7 +56,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    const token = await userCredential.user.getIdToken();
+    await syncUserWithDatabase(token, email);
     router.push('/app/dashboard');
   };
 
