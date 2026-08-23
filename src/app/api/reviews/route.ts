@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     });
 
     // Execute Prisma transaction to write log AND update state
-    const [updatedState, reviewLog] = await prisma.$transaction([
+    const [updatedState] = await prisma.$transaction([
       prisma.reviewState.update({
         where: { id: reviewState.id },
         data: {
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     logger.info({ problemId, userId, quality, newInterval: sm2Result.interval }, 'Review processed');
 
     return NextResponse.json(updatedState);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error({ err: error }, 'Error processing review');
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

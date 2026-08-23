@@ -30,11 +30,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
+    let timeout = setTimeout(() => {
+      console.warn("Firebase onAuthStateChanged timeout. Forcing loading to false.");
+      setLoading(false);
+    }, 5000);
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      clearTimeout(timeout);
       setUser(currentUser);
       setLoading(false);
     });
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const syncUserWithDatabase = async (token: string, email: string, name?: string) => {
