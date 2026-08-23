@@ -112,8 +112,8 @@ export default function StudyPage() {
 
   if (queue.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6">
-        <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 border border-success/20">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6 animate-in fade-in duration-500">
+        <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 border border-success/20 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
           <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -122,7 +122,7 @@ export default function StudyPage() {
         <p className="text-muted-text max-w-md">
           No problems due for review right now. Take a break or add some new problems to your decks.
         </p>
-        <Link href="/app/decks" className="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-primary/90 transition shadow-lg shadow-primary/25">
+        <Link href="/app/decks" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0">
           Browse Decks
         </Link>
       </div>
@@ -136,26 +136,28 @@ export default function StudyPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Study Session</h1>
-        <span className="text-sm font-medium text-muted-text bg-surface px-3 py-1 rounded-full border border-border">
+        <span className="text-sm font-medium text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 shadow-sm">
           Card {currentIndex} of {originalCount}
         </span>
       </div>
 
-      <div className="bg-surface rounded-xl border border-white/10 shadow-xl mb-8 overflow-hidden">
-        <div className="p-6 md:p-8">
+      <div className="bg-surface rounded-2xl border border-border shadow-xl shadow-black/5 dark:shadow-black/40 mb-8 overflow-hidden transition-all duration-300 relative">
+        <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+        
+        <div className="p-6 md:p-8 relative z-10">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-2xl font-bold mb-3">{currentCard.title}</h2>
+              <h2 className="text-2xl font-bold mb-4">{currentCard.title}</h2>
               <div className="flex flex-wrap gap-2">
-                <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                  currentCard.difficulty === 'EASY' ? 'bg-success/20 text-success' :
-                  currentCard.difficulty === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-500' :
-                  'bg-danger/20 text-danger'
+                <span className={`px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm ${
+                  currentCard.difficulty === 'EASY' ? 'bg-success/10 text-success border border-success/20' :
+                  currentCard.difficulty === 'MEDIUM' ? 'bg-warning/10 text-warning border border-warning/20' :
+                  'bg-danger/10 text-danger border border-danger/20'
                 }`}>
                   {currentCard.difficulty}
                 </span>
                 {currentCard.tags.map(tag => (
-                  <span key={tag.id} className="bg-white/5 text-muted-text px-2.5 py-1 rounded-md text-xs border border-white/5">
+                  <span key={tag.id} className="bg-background text-muted-text px-2.5 py-1 rounded-md text-xs border border-border shadow-sm">
                     {tag.name}
                   </span>
                 ))}
@@ -166,7 +168,7 @@ export default function StudyPage() {
                 href={currentCard.leetcodeUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 transition-colors text-sm flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg font-medium"
+                className="text-primary hover:text-primary/80 transition-colors text-sm flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-lg font-medium border border-primary/20 hover:bg-primary/20"
               >
                 LeetCode
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -177,20 +179,20 @@ export default function StudyPage() {
           </div>
 
           {!isRevealed ? (
-            <div className="mt-12 mb-4 flex justify-center">
+            <div className="mt-16 mb-6 flex justify-center">
               <button
                 onClick={() => setIsRevealed(true)}
-                className="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-primary/90 transition shadow-lg shadow-primary/25 text-lg w-full md:w-auto"
+                className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 text-lg w-full md:w-auto"
               >
-                Show My Notes & Solution
+                Show Answer
               </button>
             </div>
           ) : (
             <div className="mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {currentCard.notes && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white/90">My Notes</h3>
-                  <div className="bg-background/50 rounded-lg p-5 text-sm whitespace-pre-wrap text-muted-text border border-white/5 leading-relaxed">
+                  <h3 className="text-lg font-semibold text-text">My Notes</h3>
+                  <div className="bg-background rounded-xl p-5 text-sm whitespace-pre-wrap text-muted-text border border-border leading-relaxed shadow-inner">
                     {currentCard.notes}
                   </div>
                 </div>
@@ -198,18 +200,18 @@ export default function StudyPage() {
               
               {currentCard.userSolution && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-white/90 flex justify-between items-end">
+                  <h3 className="text-lg font-semibold text-text flex justify-between items-end">
                     Solution
-                    {currentCard.language && <span className="text-xs text-muted-text font-normal bg-background px-2 py-1 rounded border border-white/5">{currentCard.language}</span>}
+                    {currentCard.language && <span className="text-xs text-muted-text font-medium bg-background px-2.5 py-1 rounded-md border border-border">{currentCard.language}</span>}
                   </h3>
-                  <pre className="bg-[#1e1e1e] rounded-lg p-5 overflow-x-auto text-sm border border-white/10 text-gray-300">
+                  <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto text-sm border border-border shadow-inner text-gray-300">
                     <code>{currentCard.userSolution}</code>
                   </pre>
                 </div>
               )}
 
-              <div className="pt-8 mt-8 border-t border-white/10">
-                <h3 className="text-center font-medium mb-6 text-white/90">How well did you remember this?</h3>
+              <div className="pt-8 mt-8 border-t border-border">
+                <h3 className="text-center font-bold mb-6 text-text">How well did you remember this?</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {QUALITY_SCORES.map(score => (
                     <button

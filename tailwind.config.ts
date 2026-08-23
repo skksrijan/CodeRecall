@@ -10,13 +10,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        surface: "var(--surface)",
-        primary: "var(--primary)",
-        secondary: "var(--secondary)",
-        success: "var(--success)",
-        danger: "var(--danger)",
-        "muted-text": "var(--muted-text)",
+        background: "hsl(var(--background))",
+        surface: "hsl(var(--surface))",
+        primary: "hsl(var(--primary))",
+        secondary: "hsl(var(--secondary))",
+        success: "hsl(var(--success))",
+        danger: "hsl(var(--danger))",
+        warning: "hsl(var(--warning))",
+        text: "hsl(var(--text))",
+        "muted-text": "hsl(var(--muted-text))",
+        border: "hsl(var(--border))",
       },
     },
   },

@@ -2,34 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --surface: #f3f4f6;
-  --primary: #3b82f6;
-  --secondary: #8b5cf6;
-  --success: #10b981;
-  --danger: #ef4444;
-  --muted-text: #6b7280;
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --surface: 0 0% 100%;
+    --primary: 221 83% 53%;
+    --secondary: 262 83% 58%;
+    --success: 142 71% 45%;
+    --danger: 348 83% 47%;
+    --warning: 38 92% 50%;
+    --muted-text: 215 16% 47%;
+    --text: 222 47% 11%;
+    --border: 214 32% 91%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --surface: 217 33% 17%;
+    --primary: 217 91% 60%;
+    --secondary: 262 83% 68%;
+    --success: 142 71% 45%;
+    --danger: 348 83% 47%;
+    --warning: 38 92% 50%;
+    --muted-text: 215 20% 65%;
+    --text: 210 40% 98%;
+    --border: 217 33% 25%;
+  }
 }
 
-.dark {
-  --background: #111827;
-  --surface: #1f2937;
-  --primary: #3b82f6;
-  --secondary: #8b5cf6;
-  --success: #10b981;
-  --danger: #ef4444;
-  --muted-text: #9ca3af;
-}
-
-body {
-  color: #111827; /* Dark text for light mode */
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-.dark body {
-  color: #f9fafb; /* Light text for dark mode */
+@layer base {
+  body {
+    background-color: hsl(var(--background));
+    background-image: 
+      radial-gradient(circle at 15% 50%, hsla(var(--primary)/0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, hsla(var(--secondary)/0.08), transparent 25%);
+    background-attachment: fixed;
+    color: hsl(var(--text));
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
 }
 
 @layer utilities {
