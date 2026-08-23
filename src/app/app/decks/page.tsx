@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import DeckModal from '@/components/DeckModal';
+import ImportModal from '@/components/ImportModal';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Plus, MoreVertical, Edit2, Trash2, LibraryBig } from 'lucide-react';
@@ -12,6 +13,7 @@ export default function DecksPage() {
   const [decks, setDecks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingDeck, setEditingDeck] = useState<any>(null);
   const [token, setToken] = useState('');
 
@@ -72,13 +74,24 @@ export default function DecksPage() {
           <h1 className="text-3xl font-extrabold tracking-tight">Your Decks</h1>
           <p className="text-muted-text mt-1">Manage your collections of coding problems</p>
         </div>
-        <button
-          onClick={() => { setEditingDeck(null); setIsModalOpen(true); }}
-          className="bg-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:bg-primary/90 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          New Deck
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="bg-surface border border-border text-text px-4 py-2.5 rounded-xl font-semibold shadow-sm hover:bg-background transition-all flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Import
+          </button>
+          <button
+            onClick={() => { setEditingDeck(null); setIsModalOpen(true); }}
+            className="bg-primary text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:bg-primary/90 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            New Deck
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -156,6 +169,14 @@ export default function DecksPage() {
         onSaved={handleSaved}
         existingDeck={editingDeck}
         token={token}
+      />
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImported={() => fetchDecks(token)}
+        token={token}
+        decks={decks}
       />
     </div>
   );
