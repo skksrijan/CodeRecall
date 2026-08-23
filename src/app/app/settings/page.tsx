@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [name, setName] = useState('');
   const [notifications, setNotifications] = useState(false);
   const [dailyNewLimit, setDailyNewLimit] = useState<number>(5);
+  const [defaultLanguage, setDefaultLanguage] = useState<string>('javascript');
   
   // Security Form
   const [currentPassword, setCurrentPassword] = useState('');
@@ -46,6 +47,7 @@ export default function SettingsPage() {
         setNotifications(data.notificationsEnabled);
         if (data.name) setName(data.name);
         if (data.dailyNewLimit !== undefined) setDailyNewLimit(data.dailyNewLimit);
+        if (data.defaultLanguage) setDefaultLanguage(data.defaultLanguage);
       }
     } catch (e) {
       console.error(e);
@@ -64,7 +66,7 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name, notificationsEnabled: notifications, dailyNewLimit })
+        body: JSON.stringify({ name, notificationsEnabled: notifications, dailyNewLimit, defaultLanguage })
       });
 
       if (user && name !== user.displayName) {
@@ -193,6 +195,25 @@ export default function SettingsPage() {
               onChange={e => setDailyNewLimit(parseInt(e.target.value) || 5)}
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-muted-text mb-2">Default Code Language</label>
+            <p className="text-xs text-muted-text mb-2">Your preferred programming language for the study scratchpad.</p>
+            <select
+              value={defaultLanguage}
+              onChange={e => setDefaultLanguage(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none"
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="csharp">C#</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+            </select>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl">

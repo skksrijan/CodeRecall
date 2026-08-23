@@ -2,7 +2,10 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { toast } from 'react-hot-toast';
+import { PlayCircle, Clock, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { Editor } from '@monaco-editor/react';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 interface ReviewState {
@@ -68,6 +71,8 @@ function StudyContent() {
   const [showKeepStudying, setShowKeepStudying] = useState(false);
   const [isAddingSolution, setIsAddingSolution] = useState(false);
   const [newSolutionCode, setNewSolutionCode] = useState('');
+  const [globalDefaultLanguage, setGlobalDefaultLanguage] = useState('javascript');
+  const [currentLanguage, setCurrentLanguage] = useState('javascript');
 
   useEffect(() => {
     if (user) {
@@ -92,13 +97,20 @@ function StudyContent() {
           setOriginalCount(1);
         }
       } else {
-        const res = await fetch('/api/reviews/queue', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch queue');
-        const data = await res.json();
+        const [queueRes, settingsRes] = await Promise.all([
+          fetch('/api/reviews/queue', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/user/settings', { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        if (!queueRes.ok) throw new Error('Failed to fetch queue');
+        
+        const data = await queueRes.json();
         setQueue(data);
         setOriginalCount(data.length);
+        
+        if (settingsRes.ok) {
+          const settings = await settingsRes.json();
+          if (settings.defaultLanguage) setGlobalDefaultLanguage(settings.defaultLanguage);
+        }
       }
     } catch {
       toast.error('Failed to load review queue');
@@ -185,9 +197,10 @@ function StudyContent() {
       setScratchpadCode('');
       setIsAddingSolution(false);
       setNewSolutionCode('');
+      setCurrentLanguage(queue[0].language || globalDefaultLanguage);
       loadDescription();
     }
-  }, [queue.length > 0 ? queue[0].id : null, user]);
+  }, [queue.length > 0 ? queue[0].id : null, user, globalDefaultLanguage]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -436,20 +449,49 @@ function StudyContent() {
                             </button>
                           </div>
                         </div>
-                        <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto text-sm border border-border shadow-inner text-[#d4d4d4]">
-                          <code>{currentCard.userSolution}</code>
-                        </pre>
+                        
+                        {/* Wrap the solution in markdown codeblocks so it gets syntax highlighted */}
+                        <MarkdownRenderer 
+                          content={`\`\`\`${currentCard.language || 'javascript'}\n${currentCard.userSolution}\n\`\`\``}
+                        />
                       </div>
                     ) : isAddingSolution ? (
-                      <div className="space-y-3 flex flex-col h-[400px]">
-                        <h3 className="text-base font-semibold text-text">Add / Edit Solution</h3>
-                        <textarea
-                          value={newSolutionCode}
-                          onChange={(e) => setNewSolutionCode(e.target.value)}
-                          className="flex-1 w-full bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-xl font-mono text-sm border border-border focus:outline-none focus:border-primary resize-none"
-                          placeholder="Paste your solution here..."
-                          spellCheck={false}
-                        />
+                      <div className="space-y-3 flex flex-col">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-base font-semibold text-text">Add / Edit Solution</h3>
+                          <select
+                            value={currentLanguage}
+                            onChange={(e) => setCurrentLanguage(e.target.value)}
+                            className="bg-background border border-border text-xs px-2 py-1 rounded-lg focus:outline-none focus:border-primary text-text"
+                          >
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="csharp">C#</option>
+                            <option value="go">Go</option>
+                            <option value="rust">Rust</option>
+                          </select>
+                        </div>
+                        <div className="w-full h-[300px] border border-border rounded-xl overflow-hidden shadow-inner">
+                          <Editor
+                            height="100%"
+                            defaultLanguage={currentLanguage}
+                            language={currentLanguage}
+                            theme="vs-dark"
+                            value={newSolutionCode}
+                            onChange={(val) => setNewSolutionCode(val || '')}
+                            options={{
+                              minimap: { enabled: false },
+                              fontSize: 14,
+                              fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                              padding: { top: 16, bottom: 16 },
+                              scrollBeyondLastLine: false,
+                              tabSize: 2,
+                            }}
+                          />
+                        </div>
                         <div className="flex justify-end gap-2">
                           <button 
                             onClick={() => setIsAddingSolution(false)}
@@ -465,10 +507,10 @@ function StudyContent() {
                                 const res = await fetch(`/api/problems/${currentCard.id}`, {
                                   method: 'PATCH',
                                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                                  body: JSON.stringify({ userSolution: newSolutionCode })
+                                  body: JSON.stringify({ userSolution: newSolutionCode, language: currentLanguage })
                                 });
                                 if (res.ok) {
-                                  setQueue(prev => prev.map((p, i) => i === 0 ? { ...p, userSolution: newSolutionCode } : p));
+                                  setQueue(prev => prev.map((p, i) => i === 0 ? { ...p, userSolution: newSolutionCode, language: currentLanguage } : p));
                                   setIsAddingSolution(false);
                                   toast.success("Solution saved");
                                 } else throw new Error();
@@ -519,8 +561,8 @@ function StudyContent() {
                 
                 <h3 className="text-sm font-semibold text-text mb-3">My Notes</h3>
                 {currentCard.notes ? (
-                  <div className="bg-background rounded-xl p-5 text-sm whitespace-pre-wrap text-muted-text border border-border leading-relaxed">
-                    {currentCard.notes}
+                  <div className="bg-surface border border-border p-5 rounded-xl shadow-inner">
+                    <MarkdownRenderer content={currentCard.notes} />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-20 text-muted-text italic bg-background/50 rounded-xl border border-border/50">
@@ -542,15 +584,39 @@ function StudyContent() {
               </svg>
               Code Scratchpad
             </h3>
+            <select
+              value={currentLanguage}
+              onChange={(e) => setCurrentLanguage(e.target.value)}
+              className="bg-background border border-border text-xs px-2 py-1 rounded-lg focus:outline-none focus:border-primary text-text"
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="csharp">C#</option>
+              <option value="go">Go</option>
+              <option value="rust">Rust</option>
+            </select>
           </div>
           
-          <div className="flex-1 p-0 relative bg-[#1e1e1e]">
-            <textarea
+          <div className="flex-1 p-0 relative bg-[#1e1e1e] overflow-hidden">
+            <Editor
+              height="100%"
+              defaultLanguage={currentLanguage}
+              language={currentLanguage}
+              theme="vs-dark"
               value={scratchpadCode}
-              onChange={(e) => setScratchpadCode(e.target.value)}
-              className="w-full h-full bg-transparent text-[#d4d4d4] font-mono text-sm p-5 resize-none focus:outline-none custom-scrollbar"
-              placeholder="// Write your code or scratch notes here...&#10;// This code is strictly for your practice and will not be saved."
-              spellCheck="false"
+              onChange={(val) => setScratchpadCode(val || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: '"Fira Code", "JetBrains Mono", monospace',
+                padding: { top: 16, bottom: 16 },
+                scrollBeyondLastLine: false,
+                tabSize: 2,
+                wordWrap: 'on'
+              }}
             />
           </div>
           

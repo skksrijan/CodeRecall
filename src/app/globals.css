@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --surface: 0 0% 100%;
+    --background: 45 30% 96%;
+    --surface: 45 20% 98%;
     --primary: 221 83% 53%;
     --secondary: 262 83% 58%;
     --success: 142 71% 45%;
@@ -13,7 +13,7 @@
     --warning: 38 92% 50%;
     --muted-text: 215 16% 47%;
     --text: 222 47% 11%;
-    --border: 214 32% 91%;
+    --border: 45 20% 90%;
   }
 
   .dark {

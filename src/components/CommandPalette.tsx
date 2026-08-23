@@ -74,8 +74,12 @@ export default function CommandPalette() {
       onOpenChange={setOpen} 
       label="Global Command Menu"
       className="fixed inset-0 z-50 flex justify-center items-start pt-[15vh] px-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={() => setOpen(false)}
     >
-      <div className="w-full max-w-2xl bg-surface border border-border shadow-2xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl bg-surface border border-border shadow-2xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200"
+      >
         <div className="flex items-center border-b border-border px-4 py-3 text-text">
           <Search className="w-5 h-5 text-muted-text mr-3" />
           <Command.Input 

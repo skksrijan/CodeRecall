@@ -24,6 +24,7 @@ model User {
   name                   String?
   createdAt              DateTime  @default(now())
   dailyNewLimit          Int       @default(5)
+  defaultLanguage        String    @default("javascript")
   notificationsEnabled   Boolean   @default(false)
   hasCompletedOnboarding Boolean   @default(false)
   plan                   Plan      @default(FREE)

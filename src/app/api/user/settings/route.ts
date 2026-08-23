@@ -32,6 +32,7 @@ export async function PATCH(req: Request) {
       data: {
         name: body.name,
         dailyNewLimit: body.dailyNewLimit !== undefined ? parseInt(body.dailyNewLimit, 10) : undefined,
+        defaultLanguage: body.defaultLanguage,
         notificationsEnabled: body.notificationsEnabled,
         hasCompletedOnboarding: body.hasCompletedOnboarding,
       }
