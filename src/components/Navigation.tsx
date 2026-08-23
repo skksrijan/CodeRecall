@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, LayoutDashboard, Library, PlayCircle, LogOut } from 'lucide-react';
+import { Moon, Sun, LayoutDashboard, Library, PlayCircle, LogOut, PieChart } from 'lucide-react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -47,6 +47,7 @@ export default function Navigation() {
     { href: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/app/decks', label: 'Decks', icon: Library },
     { href: '/app/study', label: 'Study', icon: PlayCircle },
+    { href: '/app/stats', label: 'Stats', icon: PieChart },
   ];
 
   return (
