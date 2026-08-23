@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { PlayCircle, Clock, CheckCircle2, ChevronRight, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { Editor } from '@monaco-editor/react';
+import dynamic from 'next/dynamic';
+
+const MonacoEditor = dynamic(
+  () => import('@monaco-editor/react').then(mod => ({ default: mod.Editor })),
+  { ssr: false, loading: () => <div className="w-full h-full bg-[#1e1e1e] flex items-center justify-center text-[#d4d4d4]/50 text-sm">Loading editor...</div> }
+);
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 interface ReviewState {
@@ -301,13 +305,30 @@ function StudyContent() {
   // Dynamic timer based on difficulty
   const getWarningThreshold = (difficulty: string) => {
     switch (difficulty) {
-      case 'EASY': return 10 * 60; // 10 mins
-      case 'MEDIUM': return 25 * 60; // 25 mins
-      case 'HARD': return 45 * 60; // 45 mins
-      default: return 15 * 60;
+      case 'EASY': return 5 * 60; // 5 mins
+      case 'MEDIUM': return 15 * 60; // 15 mins
+      case 'HARD': return 30 * 60; // 30 mins
+      default: return 10 * 60;
     }
   };
   const isTimerWarning = elapsedSeconds > getWarningThreshold(currentCard.difficulty);
+
+  const getSuggestedGrade = (difficulty: string, timeSeconds: number) => {
+    const easyTarget = 2 * 60; // 2 mins
+    const medTarget = 10 * 60; // 10 mins
+    const hardTarget = 20 * 60; // 20 mins
+
+    let target = easyTarget;
+    if (difficulty === 'MEDIUM') target = medTarget;
+    if (difficulty === 'HARD') target = hardTarget;
+
+    if (timeSeconds <= target) return 5; // Easy
+    if (timeSeconds <= target * 2) return 4; // Good
+    if (timeSeconds <= target * 3) return 3; // Hard
+    return 2; // Took too long, suggest struggling option
+  };
+  
+  const suggestedGrade = getSuggestedGrade(currentCard.difficulty, elapsedSeconds);
 
   return (
     <div className="w-full h-[calc(100vh-80px)] flex flex-col">
@@ -475,7 +496,7 @@ function StudyContent() {
                           </select>
                         </div>
                         <div className="w-full h-[300px] border border-border rounded-xl overflow-hidden shadow-inner">
-                          <Editor
+                          <MonacoEditor
                             height="100%"
                             defaultLanguage={currentLanguage}
                             language={currentLanguage}
@@ -601,7 +622,7 @@ function StudyContent() {
           </div>
           
           <div className="flex-1 p-0 relative bg-[#1e1e1e] overflow-hidden">
-            <Editor
+            <MonacoEditor
               height="100%"
               defaultLanguage={currentLanguage}
               language={currentLanguage}
@@ -635,20 +656,28 @@ function StudyContent() {
             <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300">
               <h3 className="text-center font-bold mb-3 text-text text-sm">How well did you remember this?</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {QUALITY_SCORES.map(score => (
-                  <button
-                    key={score.value}
-                    onClick={() => handleGrade(score.value)}
-                    disabled={isSubmitting}
-                    className={`flex flex-col items-center p-2 rounded-lg border transition-all ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'}`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-xs">{score.label}</span>
-                      {score.key && <span className="opacity-100 text-[11px] font-bold font-mono border-2 border-current bg-background/30 rounded px-1.5 hidden md:inline">{score.key}</span>}
-                    </div>
-                    <span className="text-[9px] opacity-80 text-center leading-tight">{score.description}</span>
-                  </button>
-                ))}
+                {QUALITY_SCORES.map(score => {
+                  const isSuggested = score.value === suggestedGrade;
+                  return (
+                    <button
+                      key={score.value}
+                      onClick={() => handleGrade(score.value)}
+                      disabled={isSubmitting}
+                      className={`flex flex-col items-center p-2 rounded-lg border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'} ${isSuggested ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                    >
+                      {isSuggested && (
+                        <span className="absolute -top-2.5 bg-primary text-background text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                          Suggested
+                        </span>
+                      )}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-xs">{score.label}</span>
+                        {score.key && <span className="opacity-100 text-[11px] font-bold font-mono border-2 border-current bg-background/30 rounded px-1.5 hidden md:inline">{score.key}</span>}
+                      </div>
+                      <span className="text-[9px] opacity-80 text-center leading-tight">{score.description}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

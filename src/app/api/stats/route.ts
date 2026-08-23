@@ -13,42 +13,92 @@ export async function GET(req: Request) {
       return date.toISOString().split('T')[0];
     };
 
-    // 1. Difficulty Breakdown
-    const problems = await prisma.problem.findMany({
-      where: { userId: user.id },
-      select: { difficulty: true }
-    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
 
+    // Run all independent queries in parallel
+    const [
+      problems,
+      upcomingReviews,
+      overdueReviews,
+      dbUser,
+      totalNewCards,
+      newCardsReviewedToday,
+      allReviews,
+      tagsWithReviews
+    ] = await Promise.all([
+      // 1. Difficulty Breakdown
+      prisma.problem.findMany({
+        where: { userId: user.id },
+        select: { difficulty: true }
+      }),
+      // 2. Upcoming reviews
+      prisma.reviewState.findMany({
+        where: {
+          problem: { userId: user.id },
+          nextReviewDate: { gte: today, lt: nextWeek },
+          repetitions: { gt: 0 }
+        },
+        select: { nextReviewDate: true }
+      }),
+      // 3. Overdue reviews
+      prisma.reviewState.findMany({
+        where: {
+          problem: { userId: user.id },
+          nextReviewDate: { lt: today },
+          repetitions: { gt: 0 }
+        },
+        select: { nextReviewDate: true }
+      }),
+      // 4. User settings
+      prisma.user.findUnique({ where: { id: user.id }, select: { dailyNewLimit: true } }),
+      // 5. Total new cards
+      prisma.reviewState.count({
+        where: {
+          problem: { userId: user.id },
+          repetitions: 0
+        }
+      }),
+      // 6. New cards reviewed today
+      prisma.review.count({
+        where: {
+          userId: user.id,
+          reviewedAt: { gte: startOfDay },
+          previousInterval: 0
+        }
+      }),
+      // 7. All reviews for heatmap
+      prisma.review.findMany({
+        where: { userId: user.id },
+        select: { reviewedAt: true },
+        orderBy: { reviewedAt: 'asc' }
+      }),
+      // 8. Tags with reviews for weak topics
+      prisma.tag.findMany({
+        include: {
+          problems: {
+            where: { userId: user.id },
+            include: {
+              reviews: { select: { quality: true } }
+            }
+          }
+        }
+      })
+    ]);
+
+    // 1. Difficulty Breakdown
     const difficulty = {
       EASY: problems.filter(p => p.difficulty === 'EASY').length,
       MEDIUM: problems.filter(p => p.difficulty === 'MEDIUM').length,
       HARD: problems.filter(p => p.difficulty === 'HARD').length,
     };
 
-    // 2. Upcoming Load (Next 7 days + overdue)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
-    // Fetch active upcoming reviews (repetitions > 0)
-    const upcomingReviews = await prisma.reviewState.findMany({
-      where: {
-        problem: { userId: user.id },
-        nextReviewDate: { gte: today, lt: nextWeek },
-        repetitions: { gt: 0 }
-      },
-      select: { nextReviewDate: true }
-    });
-
-    const overdueReviews = await prisma.reviewState.findMany({
-      where: {
-        problem: { userId: user.id },
-        nextReviewDate: { lt: today },
-        repetitions: { gt: 0 }
-      },
-      select: { nextReviewDate: true }
-    });
+    // 2. Upcoming Load
+    const dailyNewLimit = dbUser?.dailyNewLimit || 5;
 
     const upcomingLoadMap: Record<string, number> = {};
     for (let i = 0; i < 7; i++) {
@@ -56,7 +106,7 @@ export async function GET(req: Request) {
       d.setDate(d.getDate() + i);
       upcomingLoadMap[formatLocal(d)] = 0;
     }
-    
+
     const todayStr = formatLocal(today);
     upcomingLoadMap[todayStr] += overdueReviews.length;
 
@@ -67,38 +117,16 @@ export async function GET(req: Request) {
       }
     });
 
-    // Distribute new cards
-    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { dailyNewLimit: true } });
-    const dailyNewLimit = dbUser?.dailyNewLimit || 5;
-
-    const totalNewCards = await prisma.reviewState.count({
-      where: {
-        problem: { userId: user.id },
-        repetitions: 0
-      }
-    });
-
-    const newCardsReviewedToday = await prisma.review.count({
-      where: {
-        userId: user.id,
-        reviewedAt: { gte: today },
-        previousInterval: 0
-      }
-    });
-
     let remainingNewCards = totalNewCards;
-    let todayAllowance = Math.max(0, dailyNewLimit - newCardsReviewedToday);
-    
-    // Distribute over the 7 days
+    const todayAllowance = Math.max(0, dailyNewLimit - newCardsReviewedToday);
+
     for (let i = 0; i < 7; i++) {
       if (remainingNewCards <= 0) break;
       const d = new Date(today);
       d.setDate(d.getDate() + i);
       const dStr = formatLocal(d);
-      
       const allowance = i === 0 ? todayAllowance : dailyNewLimit;
       const toAdd = Math.min(remainingNewCards, allowance);
-      
       upcomingLoadMap[dStr] += toAdd;
       remainingNewCards -= toAdd;
     }
@@ -108,13 +136,7 @@ export async function GET(req: Request) {
       count: upcomingLoadMap[date]
     }));
 
-    // 3. Heatmap & Streaks (Last 90 days)
-    const allReviews = await prisma.review.findMany({
-      where: { userId: user.id },
-      select: { reviewedAt: true },
-      orderBy: { reviewedAt: 'asc' }
-    });
-
+    // 3. Heatmap & Streaks
     const heatmapMap: Record<string, number> = {};
     const ninetyDaysAgo = new Date(today);
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 89);
@@ -185,18 +207,7 @@ export async function GET(req: Request) {
       prevDateStr = dStr;
     });
 
-    // 4. Weak Topics Radar
-    const tagsWithReviews = await prisma.tag.findMany({
-      include: {
-        problems: {
-          where: { userId: user.id },
-          include: {
-            reviews: { select: { quality: true } }
-          }
-        }
-      }
-    });
-
+    // 4. Weak Topics Radar (tagsWithReviews already fetched in parallel)
     const topicStats: { name: string, avgQuality: number, reviewCount: number }[] = [];
 
     tagsWithReviews.forEach(tag => {
@@ -227,7 +238,7 @@ export async function GET(req: Request) {
       streak: { current: currentStreak, longest: longestStreak },
       weakTopics
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Stats error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

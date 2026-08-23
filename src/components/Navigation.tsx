@@ -21,13 +21,13 @@ export default function Navigation() {
   useEffect(() => {
     if (user) {
       user.getIdToken().then((token) => {
-        fetch('/api/reviews/queue', {
+        fetch('/api/reviews/queue/count', {
           headers: { Authorization: `Bearer ${token}` }
         })
           .then((res) => res.json())
           .then((data) => {
-            if (Array.isArray(data)) {
-              setDueCount(data.length);
+            if (typeof data.count === 'number') {
+              setDueCount(data.count);
             }
           })
           .catch(console.error);

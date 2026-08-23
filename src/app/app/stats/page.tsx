@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  PieChart, Pie, Cell, 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
-import { Flame, Calendar as CalendarIcon, TrendingUp, Target, Loader2 } from 'lucide-react';
+import { Flame, Calendar as CalendarIcon, TrendingUp, Target } from 'lucide-react';
 import Link from 'next/link';
 
 type StatsData = {
