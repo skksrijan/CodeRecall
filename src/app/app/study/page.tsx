@@ -66,6 +66,8 @@ function StudyContent() {
   const [activeTab, setActiveTab] = useState<TabType>('description');
 
   const [showKeepStudying, setShowKeepStudying] = useState(false);
+  const [isAddingSolution, setIsAddingSolution] = useState(false);
+  const [newSolutionCode, setNewSolutionCode] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -140,6 +142,9 @@ function StudyContent() {
   const revealAnswer = () => {
     setIsRevealed(true);
     setActiveTab('solution');
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   };
 
   // Stopwatch effect
@@ -178,6 +183,8 @@ function StudyContent() {
       setDescription(null);
       setActiveTab('description');
       setScratchpadCode('');
+      setIsAddingSolution(false);
+      setNewSolutionCode('');
       loadDescription();
     }
   }, [queue.length > 0 ? queue[0].id : null, user]);
@@ -412,19 +419,81 @@ function StudyContent() {
                   </div>
                 ) : (
                   <div>
-                    {currentCard.userSolution ? (
+                    {currentCard.userSolution && !isAddingSolution ? (
                       <div className="space-y-3">
                         <div className="flex justify-between items-end">
                           <h3 className="text-base font-semibold text-text">Your Saved Solution</h3>
-                          {currentCard.language && <span className="text-xs text-muted-text font-medium bg-background px-2.5 py-1 rounded-md border border-border">{currentCard.language}</span>}
+                          <div className="flex gap-2 items-center">
+                            {currentCard.language && <span className="text-xs text-muted-text font-medium bg-background px-2.5 py-1 rounded-md border border-border">{currentCard.language}</span>}
+                            <button 
+                              onClick={() => {
+                                setNewSolutionCode(currentCard.userSolution || '');
+                                setIsAddingSolution(true);
+                              }}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Edit
+                            </button>
+                          </div>
                         </div>
                         <pre className="bg-[#1e1e1e] rounded-xl p-5 overflow-x-auto text-sm border border-border shadow-inner text-[#d4d4d4]">
                           <code>{currentCard.userSolution}</code>
                         </pre>
                       </div>
+                    ) : isAddingSolution ? (
+                      <div className="space-y-3 flex flex-col h-[400px]">
+                        <h3 className="text-base font-semibold text-text">Add / Edit Solution</h3>
+                        <textarea
+                          value={newSolutionCode}
+                          onChange={(e) => setNewSolutionCode(e.target.value)}
+                          className="flex-1 w-full bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-xl font-mono text-sm border border-border focus:outline-none focus:border-primary resize-none"
+                          placeholder="Paste your solution here..."
+                          spellCheck={false}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => setIsAddingSolution(false)}
+                            className="px-4 py-2 text-sm text-muted-text hover:text-text transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!user) return;
+                              const token = await user.getIdToken();
+                              try {
+                                const res = await fetch(`/api/problems/${currentCard.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                  body: JSON.stringify({ userSolution: newSolutionCode })
+                                });
+                                if (res.ok) {
+                                  setQueue(prev => prev.map((p, i) => i === 0 ? { ...p, userSolution: newSolutionCode } : p));
+                                  setIsAddingSolution(false);
+                                  toast.success("Solution saved");
+                                } else throw new Error();
+                              } catch {
+                                toast.error("Failed to save solution");
+                              }
+                            }}
+                            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+                          >
+                            Save Solution
+                          </button>
+                        </div>
+                      </div>
                     ) : (
-                      <div className="flex items-center justify-center h-40 text-muted-text italic">
-                        No solution provided for this problem.
+                      <div className="flex flex-col items-center justify-center h-40 text-muted-text italic gap-4">
+                        <p>No solution provided for this problem.</p>
+                        <button 
+                          onClick={() => {
+                            setNewSolutionCode('');
+                            setIsAddingSolution(true);
+                          }}
+                          className="text-primary not-italic text-sm font-semibold bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors border border-primary/20"
+                        >
+                          + Add Solution Now
+                        </button>
                       </div>
                     )}
                   </div>
