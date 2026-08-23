@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/authMiddleware';
 import prisma from '../../../../../../prisma_client';
 import { Difficulty } from '@prisma/client';
+import { z } from 'zod';
+import { strictRateLimit } from '@/lib/rate-limit';
+import * as Sentry from '@sentry/nextjs';
+
+const ImportSchema = z.object({
+  url: z.string().min(1, 'URL is required'),
+});
 
 export async function POST(req: Request, { params }: { params: { deckId: string } }) {
   const authResult = await verifyAuth(req);
@@ -9,14 +16,28 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
     return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
 
+  const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  try {
+    const { success } = await strictRateLimit.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: 'Too many imports requested. Please wait a minute.' }, { status: 429 });
+    }
+  } catch (err) {
+    Sentry.captureException(err);
+  }
+
   const user = authResult.user!;
   const deckId = params.deckId;
 
   try {
-    const { url } = await req.json();
-    if (!url) {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    const body = await req.json();
+    const parsed = ImportSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid parameters', details: parsed.error.format() }, { status: 400 });
     }
+
+    const { url } = parsed.data;
 
     // Check if the user owns the deck
     const deck = await prisma.deck.findUnique({
@@ -159,7 +180,7 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
             };
           }
         } catch (err) {
-          console.error(`Failed to fetch ${slug}`, err);
+          Sentry.captureException(err);
         }
         return null;
       });
@@ -211,7 +232,7 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
 
     return NextResponse.json({ message: `Imported ${createdProblems.length} problems successfully`, count: createdProblems.length });
   } catch (error: any) {
-    console.error('Import error:', error);
+    Sentry.captureException(error);
     return NextResponse.json({ error: 'Internal server error during import' }, { status: 500 });
   }
 }

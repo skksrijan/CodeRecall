@@ -3,6 +3,14 @@ import { verifyAuth } from '@/lib/authMiddleware';
 import prisma from '../../../../prisma_client';
 import { calculateSM2 } from '@/lib/sm2';
 import logger from '@/lib/logger';
+import { z } from 'zod';
+import { rateLimit } from '@/lib/rate-limit';
+import * as Sentry from '@sentry/nextjs';
+
+const ReviewSchema = z.object({
+  problemId: z.string().min(1),
+  quality: z.number().int().min(0).max(5),
+});
 
 export async function POST(req: Request) {
   const authResult = await verifyAuth(req);
@@ -10,14 +18,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
 
+  const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  try {
+    const { success } = await rateLimit.limit(ip);
+    if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+  } catch (err) {
+    Sentry.captureException(err);
+  }
+
   try {
     const body = await req.json();
-    const { problemId, quality } = body;
+    const parsed = ReviewSchema.safeParse(body);
 
-    if (!problemId || typeof quality !== 'number' || quality < 0 || quality > 5) {
-      return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid parameters', details: parsed.error.format() }, { status: 400 });
     }
 
+    const { problemId, quality } = parsed.data;
     const userId = authResult.user!.id;
 
     // Load current ReviewState
@@ -68,6 +87,7 @@ export async function POST(req: Request) {
     return NextResponse.json(updatedState);
   } catch (error: unknown) {
     logger.error({ err: error }, 'Error processing review');
+    Sentry.captureException(error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

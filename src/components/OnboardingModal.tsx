@@ -89,7 +89,7 @@ export default function OnboardingModal() {
                 <h2 className="text-2xl font-bold text-text">Welcome to CodeRecall!</h2>
                 <p className="text-muted-text mt-2 leading-relaxed">
                   The smartest way to master LeetCode problems through spaced repetition. 
-                  Let&apos;s start by organizing your knowledge. Create a <strong className="text-text">Deck</strong> to group related problems together (e.g. "Blind 75" or "Graphs").
+                  Let&apos;s start by organizing your knowledge. Create a <strong className="text-text">Deck</strong> to group related problems together (e.g. &quot;Blind 75&quot; or &quot;Graphs&quot;).
                 </p>
               </div>
             )}
@@ -98,7 +98,7 @@ export default function OnboardingModal() {
                 <h2 className="text-2xl font-bold text-text">Add your Problems</h2>
                 <p className="text-muted-text mt-2 leading-relaxed">
                   Inside your deck, you can add problems you want to practice. 
-                  Just type the <strong className="text-primary">LeetCode URL</strong> and click "Autofill" — we&apos;ll automatically pull the title, difficulty, and topic tags for you!
+                  Just type the <strong className="text-primary">LeetCode URL</strong> and click &quot;Autofill&quot; — we&apos;ll automatically pull the title, difficulty, and topic tags for you!
                 </p>
               </div>
             )}
