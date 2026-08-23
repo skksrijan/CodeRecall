@@ -30,9 +30,9 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
     let problemsToAdd: { title: string, titleSlug: string, difficulty: Difficulty }[] = [];
 
     // Parse LeetCode URL
-    if (url.includes('/list/')) {
+    if (url.includes('/list/') || url.includes('/problem-list/')) {
       // It's a list URL
-      const match = url.match(/\/list\/([a-zA-Z0-9_-]+)/);
+      const match = url.match(/\/(?:list|problem-list)\/([a-zA-Z0-9_-]+)/);
       if (!match) return NextResponse.json({ error: 'Invalid list URL' }, { status: 400 });
       const slug = match[1];
       
@@ -63,6 +63,51 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
         titleSlug: q.titleSlug,
         difficulty: q.difficulty.toUpperCase() as Difficulty
       }));
+    } else if (url.includes('/studyplan/') || url.includes('/study-plan/')) {
+      // It's a study plan URL
+      const match = url.match(/\/(?:studyplan|study-plan)\/([a-zA-Z0-9_-]+)/);
+      if (!match) return NextResponse.json({ error: 'Invalid study plan URL' }, { status: 400 });
+      const slug = match[1];
+      
+      const query = `
+        query studyPlanV2Detail($planSlug: String!) {
+          studyPlanV2Detail(planSlug: $planSlug) {
+            planSubGroups {
+              questions {
+                title
+                titleSlug
+                difficulty
+              }
+            }
+          }
+        }
+      `;
+      const res = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        body: JSON.stringify({ query, variables: { planSlug: slug } })
+      });
+      const data = await res.json();
+      
+      if (!data.data?.studyPlanV2Detail?.planSubGroups) {
+        return NextResponse.json({ error: 'Could not fetch problems from study plan. Make sure the plan exists.' }, { status: 400 });
+      }
+
+      data.data.studyPlanV2Detail.planSubGroups.forEach((group: any) => {
+        if (group.questions) {
+          group.questions.forEach((q: any) => {
+            problemsToAdd.push({
+              title: q.title,
+              titleSlug: q.titleSlug,
+              difficulty: q.difficulty.toUpperCase() as Difficulty
+            });
+          });
+        }
+      });
+
+      if (problemsToAdd.length === 0) {
+        return NextResponse.json({ error: 'Study plan is empty or invalid.' }, { status: 400 });
+      }
     } else if (url.includes('/problems/')) {
       // Find all problem slugs in the input text
       const regex = /\/problems\/([a-zA-Z0-9_-]+)/g;
