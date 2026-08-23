@@ -81,6 +81,9 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
       setTitle(data.title);
       setDifficulty(data.difficulty);
       setLeetcodeUrl(data.url);
+      if (data.tags && Array.isArray(data.tags)) {
+        setTags(data.tags.map((t: string) => ({ label: t, value: t })));
+      }
       toast.success('Autofilled successfully!');
     } catch (err: any) {
       toast.error(err.message || 'Error autofilling');

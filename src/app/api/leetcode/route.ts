@@ -46,10 +46,37 @@ export async function GET(req: Request) {
       3: 'HARD'
     };
 
+    let tags: string[] = [];
+    try {
+      const query = `
+        query questionData($titleSlug: String!) {
+          question(titleSlug: $titleSlug) {
+            topicTags {
+              name
+            }
+          }
+        }
+      `;
+      const gqlRes = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+        body: JSON.stringify({ query, variables: { titleSlug: problem.stat.question__title_slug } })
+      });
+      if (gqlRes.ok) {
+        const gqlData = await gqlRes.json();
+        if (gqlData.data?.question?.topicTags) {
+          tags = gqlData.data.question.topicTags.map((t: any) => t.name);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch tags for', problem.stat.question__title_slug, e);
+    }
+
     const result = {
       title: problem.stat.question__title,
       difficulty: difficultyMap[problem.difficulty.level] || 'MEDIUM',
-      url: `https://leetcode.com/problems/${problem.stat.question__title_slug}/`
+      url: `https://leetcode.com/problems/${problem.stat.question__title_slug}/`,
+      tags
     };
 
     return NextResponse.json(result);

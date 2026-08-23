@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
       return NextResponse.json({ error: 'Deck not found' }, { status: 404 });
     }
 
-    let problemsToAdd: { title: string, titleSlug: string, difficulty: Difficulty }[] = [];
+    let problemsToAdd: { title: string, titleSlug: string, difficulty: Difficulty, tags: string[] }[] = [];
 
     // Parse LeetCode URL
     if (url.includes('/list/') || url.includes('/problem-list/')) {
@@ -43,6 +43,9 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
               title
               titleSlug
               difficulty
+              topicTags {
+                name
+              }
             }
           }
         }
@@ -61,7 +64,8 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
       problemsToAdd = data.data.favoriteQuestionList.questions.map((q: any) => ({
         title: q.title,
         titleSlug: q.titleSlug,
-        difficulty: q.difficulty.toUpperCase() as Difficulty
+        difficulty: q.difficulty.toUpperCase() as Difficulty,
+        tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
       }));
     } else if (url.includes('/studyplan/') || url.includes('/study-plan/')) {
       // It's a study plan URL
@@ -77,6 +81,9 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
                 title
                 titleSlug
                 difficulty
+                topicTags {
+                  name
+                }
               }
             }
           }
@@ -99,7 +106,8 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
             problemsToAdd.push({
               title: q.title,
               titleSlug: q.titleSlug,
-              difficulty: q.difficulty.toUpperCase() as Difficulty
+              difficulty: q.difficulty.toUpperCase() as Difficulty,
+              tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
             });
           });
         }
@@ -126,6 +134,9 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
           question(titleSlug: $titleSlug) {
             title
             difficulty
+            topicTags {
+              name
+            }
           }
         }
       `;
@@ -143,7 +154,8 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
             return {
               title: data.data.question.title,
               titleSlug: slug,
-              difficulty: data.data.question.difficulty.toUpperCase() as Difficulty
+              difficulty: data.data.question.difficulty.toUpperCase() as Difficulty,
+              tags: data.data.question.topicTags ? data.data.question.topicTags.map((t: any) => t.name) : []
             };
           }
         } catch (err) {
@@ -175,6 +187,12 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
             difficulty: p.difficulty,
             leetcodeUrl: `https://leetcode.com/problems/${p.titleSlug}/`,
             userId: user.id,
+            tags: {
+              connectOrCreate: p.tags.map(tagName => ({
+                where: { name: tagName },
+                create: { name: tagName }
+              }))
+            },
             decks: {
               connect: { id: deckId }
             },

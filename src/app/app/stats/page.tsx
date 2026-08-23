@@ -197,8 +197,8 @@ export default function StatsDashboard() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }} 
-                    itemStyle={{ color: 'var(--text)' }} 
+                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--surface))', color: 'hsl(var(--text))' }} 
+                    itemStyle={{ color: 'hsl(var(--text))' }} 
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -229,12 +229,12 @@ export default function StatsDashboard() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.weakTopics} layout="vertical" margin={{ top: 0, right: 0, left: 40, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border)" opacity={0.5} />
-                  <XAxis type="number" domain={[0, 5]} stroke="var(--muted-text)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="name" stroke="var(--muted-text)" fontSize={12} tickLine={false} axisLine={false} width={100} />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                  <XAxis type="number" domain={[0, 5]} stroke="hsl(var(--muted-text))" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-text))" fontSize={12} tickLine={false} axisLine={false} width={100} />
                   <Tooltip 
-                    cursor={{ fill: 'var(--border)', opacity: 0.2 }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }} 
+                    cursor={{ fill: 'hsl(var(--border))', opacity: 0.2 }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--surface))', color: 'hsl(var(--text))' }} 
                   />
                   <Bar dataKey="avgQuality" name="Avg Recall Quality" radius={[0, 4, 4, 0]}>
                     {data.weakTopics.map((entry, index) => (
@@ -258,15 +258,15 @@ export default function StatsDashboard() {
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.upcomingLoad} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                <XAxis dataKey="date" tickFormatter={formatDate} stroke="var(--muted-text)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="var(--muted-text)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="date" tickFormatter={formatDate} stroke="hsl(var(--muted-text))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-text))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip 
-                  cursor={{ fill: 'var(--border)', opacity: 0.2 }}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text)' }} 
+                  cursor={{ fill: 'hsl(var(--border))', opacity: 0.2 }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--surface))', color: 'hsl(var(--text))' }} 
                   labelFormatter={formatDate}
                 />
-                <Bar dataKey="count" name="Reviews Due" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" name="Reviews Due" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

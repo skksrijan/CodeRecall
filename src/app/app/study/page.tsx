@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
-
+import { useSearchParams, useRouter } from 'next/navigation';
 interface ReviewState {
   id: string;
   nextReviewDate: string;
@@ -39,7 +39,19 @@ const QUALITY_SCORES = [
 type TabType = 'description' | 'solution' | 'notes';
 
 export default function StudyPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <StudyContent />
+    </Suspense>
+  );
+}
+
+function StudyContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const manualProblemId = searchParams.get('problemId');
+
   const [queue, setQueue] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRevealed, setIsRevealed] = useState(false);
@@ -53,21 +65,39 @@ export default function StudyPage() {
   const [scratchpadCode, setScratchpadCode] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('description');
 
+  const [showKeepStudying, setShowKeepStudying] = useState(false);
+
   useEffect(() => {
     if (user) {
       user.getIdToken().then((t) => fetchQueue(t));
     }
-  }, [user]);
+  }, [user, manualProblemId]);
 
   const fetchQueue = async (token: string) => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/reviews/queue', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch queue');
-      const data = await res.json();
-      setQueue(data);
-      setOriginalCount(data.length);
+      if (manualProblemId) {
+        // Fetch specific problem for manual review
+        const res = await fetch(`/api/problems?id=${manualProblemId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch problem');
+        const data = await res.json();
+        // The API returns an array, filter it if needed, or assume it's one item
+        const problem = data.find((p: any) => p.id === manualProblemId) || data[0];
+        if (problem) {
+          setQueue([problem]);
+          setOriginalCount(1);
+        }
+      } else {
+        const res = await fetch('/api/reviews/queue', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to fetch queue');
+        const data = await res.json();
+        setQueue(data);
+        setOriginalCount(data.length);
+      }
     } catch {
       toast.error('Failed to load review queue');
     } finally {
@@ -93,8 +123,12 @@ export default function StudyPage() {
       
       if (!res.ok) throw new Error('Failed to submit review');
       
-      setQueue(prev => prev.slice(1));
-      setIsRevealed(false);
+      if (manualProblemId) {
+        setShowKeepStudying(true);
+      } else {
+        setQueue(prev => prev.slice(1));
+        setIsRevealed(false);
+      }
       window.dispatchEvent(new Event('reviewCompleted'));
     } catch {
       toast.error('Failed to submit review');
@@ -208,6 +242,39 @@ export default function StudyPage() {
     );
   }
 
+  if (showKeepStudying) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
+        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 border border-primary/20 shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]">
+          <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold">Review Complete!</h1>
+        <p className="text-muted-text max-w-md text-lg">
+          Keep studying your daily queue?
+        </p>
+        <div className="flex gap-4 mt-4">
+          <button 
+            onClick={() => router.back()}
+            className="bg-surface border border-border text-text px-8 py-3 rounded-xl font-semibold hover:bg-background transition"
+          >
+            No, go back
+          </button>
+          <button 
+            onClick={() => {
+              setShowKeepStudying(false);
+              router.replace('/app/study');
+            }}
+            className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+          >
+            Yes, let&apos;s go
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentCard = queue[0];
   const currentIndex = originalCount - queue.length + 1;
   
@@ -283,11 +350,6 @@ export default function StudyPage() {
                         }`}>
                           {currentCard.difficulty}
                         </span>
-                        {currentCard.tags.map(tag => (
-                          <span key={tag.id} className="bg-background text-muted-text px-2.5 py-1 rounded-md text-xs border border-border shadow-sm">
-                            {tag.name}
-                          </span>
-                        ))}
                       </div>
                     </div>
                     {currentCard.leetcodeUrl && (
@@ -373,12 +435,26 @@ export default function StudyPage() {
             {/* Notes Tab */}
             {activeTab === 'notes' && (
               <div className="p-6 animate-in fade-in duration-300">
+                {currentCard.tags && currentCard.tags.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-text mb-3">Topic Tags</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {currentCard.tags.map(tag => (
+                        <span key={tag.id} className="bg-background text-primary px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/20 bg-primary/5 shadow-sm">
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <h3 className="text-sm font-semibold text-text mb-3">My Notes</h3>
                 {currentCard.notes ? (
                   <div className="bg-background rounded-xl p-5 text-sm whitespace-pre-wrap text-muted-text border border-border leading-relaxed">
                     {currentCard.notes}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-40 text-muted-text italic">
+                  <div className="flex items-center justify-center h-20 text-muted-text italic bg-background/50 rounded-xl border border-border/50">
                     No notes provided for this problem.
                   </div>
                 )}

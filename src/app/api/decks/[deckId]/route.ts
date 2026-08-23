@@ -60,14 +60,30 @@ export async function DELETE(req: Request, { params }: { params: { deckId: strin
 
   try {
     // Verify ownership
-    const deck = await prisma.deck.findUnique({ where: { id: params.deckId } });
+    const deck = await prisma.deck.findUnique({ 
+      where: { id: params.deckId },
+      include: { problems: { include: { decks: true } } }
+    });
     if (!deck || deck.userId !== authResult.user!.id) {
       return NextResponse.json({ error: 'Deck not found' }, { status: 404 });
     }
 
-    await prisma.deck.delete({
-      where: { id: params.deckId },
-    });
+    // Find problems that belong ONLY to this deck
+    const orphanedProblemIds = deck.problems
+      .filter((p: any) => p.decks.length === 1 && p.decks[0].id === deck.id)
+      .map((p: any) => p.id);
+
+    // Run delete operations in a transaction
+    await prisma.$transaction([
+      // 1. Delete orphaned problems
+      prisma.problem.deleteMany({
+        where: { id: { in: orphanedProblemIds } }
+      }),
+      // 2. Delete the deck itself (this will disconnect any non-orphaned problems automatically)
+      prisma.deck.delete({
+        where: { id: params.deckId }
+      })
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

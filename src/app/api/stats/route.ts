@@ -8,6 +8,11 @@ export async function GET(req: Request) {
   const user = authResult.user!;
 
   try {
+    const formatLocal = (d: Date) => {
+      const date = new Date(d.getTime() - (d.getTimezoneOffset() * 60000));
+      return date.toISOString().split('T')[0];
+    };
+
     // 1. Difficulty Breakdown
     const problems = await prisma.problem.findMany({
       where: { userId: user.id },
@@ -26,10 +31,12 @@ export async function GET(req: Request) {
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
+    // Fetch active upcoming reviews (repetitions > 0)
     const upcomingReviews = await prisma.reviewState.findMany({
       where: {
         problem: { userId: user.id },
-        nextReviewDate: { gte: today, lt: nextWeek }
+        nextReviewDate: { gte: today, lt: nextWeek },
+        repetitions: { gt: 0 }
       },
       select: { nextReviewDate: true }
     });
@@ -37,7 +44,8 @@ export async function GET(req: Request) {
     const overdueReviews = await prisma.reviewState.findMany({
       where: {
         problem: { userId: user.id },
-        nextReviewDate: { lt: today }
+        nextReviewDate: { lt: today },
+        repetitions: { gt: 0 }
       },
       select: { nextReviewDate: true }
     });
@@ -46,18 +54,54 @@ export async function GET(req: Request) {
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      upcomingLoadMap[d.toISOString().split('T')[0]] = 0;
+      upcomingLoadMap[formatLocal(d)] = 0;
     }
     
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = formatLocal(today);
     upcomingLoadMap[todayStr] += overdueReviews.length;
 
     upcomingReviews.forEach(r => {
-      const dStr = r.nextReviewDate.toISOString().split('T')[0];
+      const dStr = formatLocal(r.nextReviewDate);
       if (upcomingLoadMap[dStr] !== undefined) {
         upcomingLoadMap[dStr]++;
       }
     });
+
+    // Distribute new cards
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { dailyNewLimit: true } });
+    const dailyNewLimit = dbUser?.dailyNewLimit || 5;
+
+    const totalNewCards = await prisma.reviewState.count({
+      where: {
+        problem: { userId: user.id },
+        repetitions: 0
+      }
+    });
+
+    const newCardsReviewedToday = await prisma.review.count({
+      where: {
+        userId: user.id,
+        reviewedAt: { gte: today },
+        previousInterval: 0
+      }
+    });
+
+    let remainingNewCards = totalNewCards;
+    let todayAllowance = Math.max(0, dailyNewLimit - newCardsReviewedToday);
+    
+    // Distribute over the 7 days
+    for (let i = 0; i < 7; i++) {
+      if (remainingNewCards <= 0) break;
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      const dStr = formatLocal(d);
+      
+      const allowance = i === 0 ? todayAllowance : dailyNewLimit;
+      const toAdd = Math.min(remainingNewCards, allowance);
+      
+      upcomingLoadMap[dStr] += toAdd;
+      remainingNewCards -= toAdd;
+    }
 
     const upcomingLoad = Object.keys(upcomingLoadMap).sort().map(date => ({
       date,
@@ -78,14 +122,13 @@ export async function GET(req: Request) {
     for (let i = 0; i < 90; i++) {
       const d = new Date(ninetyDaysAgo);
       d.setDate(d.getDate() + i);
-      heatmapMap[d.toISOString().split('T')[0]] = 0;
+      heatmapMap[formatLocal(d)] = 0;
     }
 
     const activeDays = new Set<string>();
 
     allReviews.forEach(r => {
-      const localDate = new Date(r.reviewedAt.getTime() - (r.reviewedAt.getTimezoneOffset() * 60000));
-      const dStr = localDate.toISOString().split('T')[0];
+      const dStr = formatLocal(r.reviewedAt);
       activeDays.add(dStr);
       if (heatmapMap[dStr] !== undefined) {
         heatmapMap[dStr]++;
@@ -102,18 +145,19 @@ export async function GET(req: Request) {
     let longestStreak = 0;
     
     let checkDate = new Date(today);
+    
     if (!activeDays.has(todayStr)) {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayStr = formatLocal(yesterday);
       if (activeDays.has(yesterdayStr)) {
         checkDate = yesterday;
       }
     }
 
-    if (activeDays.has(checkDate.toISOString().split('T')[0])) {
+    if (activeDays.has(formatLocal(checkDate))) {
       while (true) {
-        if (activeDays.has(checkDate.toISOString().split('T')[0])) {
+        if (activeDays.has(formatLocal(checkDate))) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {

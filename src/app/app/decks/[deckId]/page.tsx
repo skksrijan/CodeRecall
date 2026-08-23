@@ -116,13 +116,9 @@ export default function DeckProblemsPage() {
               {problems.map(problem => (
                 <tr key={problem.id} className="border-b border-muted-text/20 hover:bg-muted-text/5 transition">
                   <td className="p-4">
-                    {problem.leetcodeUrl ? (
-                      <a href={problem.leetcodeUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                        {problem.title}
-                      </a>
-                    ) : (
-                      <span>{problem.title}</span>
-                    )}
+                    <Link href={`/app/study?problemId=${problem.id}`} className="text-primary hover:underline">
+                      {problem.title}
+                    </Link>
                   </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded text-xs border ${difficultyColors[problem.difficulty]}`}>
