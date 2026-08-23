@@ -28,12 +28,12 @@ interface Problem {
 }
 
 const QUALITY_SCORES = [
-  { value: 0, label: 'Blackout', description: 'Complete memory failure', color: 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border-red-500/50', key: '1' },
-  { value: 1, label: 'Wrong, familiar', description: 'Incorrect, but remembered seeing it', color: 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30 border-orange-500/50', key: '2' },
-  { value: 2, label: 'Wrong, easy recall', description: 'Easily remembered upon seeing answer', color: 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 border-yellow-500/50', key: '3' },
-  { value: 3, label: 'Hard', description: 'Correct, but took significant effort', color: 'bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/50', key: '4' },
-  { value: 4, label: 'Good', description: 'Correct, after some hesitation', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '5' },
-  { value: 5, label: 'Easy', description: 'Correct and effortless', color: 'bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 border-cyan-500/50', key: '6' },
+  { value: 0, label: 'Blackout', description: 'Complete memory failure', color: 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border-red-500/50', key: '0' },
+  { value: 1, label: 'Wrong, familiar', description: 'Incorrect, but remembered seeing it', color: 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30 border-orange-500/50', key: '1' },
+  { value: 2, label: 'Wrong, easy recall', description: 'Easily remembered upon seeing answer', color: 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 border-yellow-500/50', key: '2' },
+  { value: 3, label: 'Hard', description: 'Correct, but took significant effort', color: 'bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/50', key: '3' },
+  { value: 4, label: 'Good', description: 'Correct, after some hesitation', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '4' },
+  { value: 5, label: 'Easy', description: 'Correct and effortless', color: 'bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 border-cyan-500/50', key: '5' },
 ];
 
 type TabType = 'description' | 'solution' | 'notes';
@@ -191,12 +191,12 @@ function StudyContent() {
         e.preventDefault();
         revealAnswer();
       } else if (isRevealed && !isSubmitting && !isInputFocused) {
-        if (e.key === '1') { e.preventDefault(); handleGrade(0); }
-        else if (e.key === '2') { e.preventDefault(); handleGrade(1); }
-        else if (e.key === '3') { e.preventDefault(); handleGrade(2); }
-        else if (e.key === '4') { e.preventDefault(); handleGrade(3); }
-        else if (e.key === '5') { e.preventDefault(); handleGrade(4); }
-        else if (e.key === '6') { e.preventDefault(); handleGrade(5); }
+        if (e.key === '0') { e.preventDefault(); handleGrade(0); }
+        else if (e.key === '1') { e.preventDefault(); handleGrade(1); }
+        else if (e.key === '2') { e.preventDefault(); handleGrade(2); }
+        else if (e.key === '3') { e.preventDefault(); handleGrade(3); }
+        else if (e.key === '4') { e.preventDefault(); handleGrade(4); }
+        else if (e.key === '5') { e.preventDefault(); handleGrade(5); }
       }
     };
     window.addEventListener('keydown', handleKeyDown);

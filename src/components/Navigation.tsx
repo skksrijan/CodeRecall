@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, LayoutDashboard, Library, PlayCircle, LogOut, PieChart } from 'lucide-react';
+import { LogOut, LayoutDashboard, Library, PlayCircle, PieChart, Moon, Sun, Search, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -86,16 +86,36 @@ export default function Navigation() {
           </div>
           <div className="flex items-center space-x-6">
             {mounted && (
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="p-2 rounded-full text-muted-text hover:text-text hover:bg-surface transition-all active:scale-95"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
+              <>
+                <button
+                  onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                  className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-surface text-muted-text hover:text-text hover:border-primary/50 transition-all text-xs font-medium"
+                  aria-label="Search"
+                >
+                  <Search className="w-4 h-4" />
+                  Search...
+                  <kbd className="hidden lg:inline-flex ml-2 items-center gap-1 font-mono text-[10px] bg-background px-1.5 py-0.5 rounded border border-border">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </button>
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="p-2 rounded-full text-muted-text hover:text-text hover:bg-surface transition-all active:scale-95"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+              </>
             )}
             
             <div className="flex items-center space-x-4 border-l border-border pl-6">
+              <Link 
+                href="/app/settings"
+                className="p-2 rounded-full text-muted-text hover:text-text hover:bg-surface transition-all active:scale-95"
+                aria-label="Settings"
+              >
+                <Settings className="w-5 h-5" />
+              </Link>
               <span className="text-sm font-medium text-muted-text hidden sm:block">
                 {user?.displayName || user?.email}
               </span>

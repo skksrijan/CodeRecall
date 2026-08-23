@@ -49,8 +49,18 @@ export default function StatsDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8 animate-pulse">
+        <div className="h-10 w-48 bg-surface rounded-lg mb-8"></div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="h-32 bg-surface rounded-2xl"></div>
+          <div className="h-32 bg-surface rounded-2xl"></div>
+          <div className="h-32 bg-surface rounded-2xl"></div>
+          <div className="h-32 bg-surface rounded-2xl"></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-96 bg-surface rounded-2xl"></div>
+          <div className="h-96 bg-surface rounded-2xl"></div>
+        </div>
       </div>
     );
   }

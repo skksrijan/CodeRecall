@@ -21,10 +21,12 @@ enum Difficulty {
 model User {
   id        String    @id @default(uuid())
   email     String    @unique
-  name          String?
-  createdAt     DateTime  @default(now())
-  dailyNewLimit Int       @default(5)
-  plan      Plan      @default(FREE)
+  name                   String?
+  createdAt              DateTime  @default(now())
+  dailyNewLimit          Int       @default(5)
+  notificationsEnabled   Boolean   @default(false)
+  hasCompletedOnboarding Boolean   @default(false)
+  plan                   Plan      @default(FREE)
   problems  Problem[]
   decks     Deck[]
   reviews   Review[]
