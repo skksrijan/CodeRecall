@@ -11,7 +11,8 @@ import Link from 'next/link';
 
 type StatsData = {
   difficulty: { EASY: number; MEDIUM: number; HARD: number };
-  upcomingLoad: { date: string; count: number }[];
+  upcomingLoad: { date: string; count: number; reviews?: number; newCards?: number }[];
+  reviewVsNew?: { reviewing: number; unreviewed: number };
   heatmap: { date: string; count: number }[];
   streak: { current: number; longest: number };
   weakTopics: { name: string; avgQuality: number; reviewCount: number }[];
@@ -81,6 +82,11 @@ export default function StatsDashboard() {
     { name: 'Medium', value: data.difficulty.MEDIUM, color: '#eab308' }, // yellow-500
     { name: 'Hard', value: data.difficulty.HARD, color: '#ef4444' }, // red-500
   ].filter(d => d.value > 0);
+
+  const statusData = data.reviewVsNew ? [
+    { name: 'In Review Cycle', value: data.reviewVsNew.reviewing, color: '#10b981' }, // emerald-500
+    { name: 'Unreviewed (New)', value: data.reviewVsNew.unreviewed, color: '#6366f1' }, // indigo-500
+  ].filter(d => d.value > 0) : [];
 
   // Heatmap Padding
   let paddedHeatmap: ({ date: string; count: number } | null)[] = [];
@@ -185,19 +191,37 @@ export default function StatsDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        {/* Difficulty Donut */}
-        <div className="bg-surface border border-border rounded-2xl p-6 shadow-xl shadow-black/5 dark:shadow-black/40">
-          <h2 className="text-lg font-bold mb-4">Problem Difficulty</h2>
+        {/* Difficulty & Status Donut */}
+        <div className="bg-surface border border-border rounded-2xl p-6 shadow-xl shadow-black/5 dark:shadow-black/40 space-y-4">
+          <h2 className="text-lg font-bold">Problem Distribution</h2>
+          
+          {/* Status Breakdown (Review vs New) */}
+          {statusData.length > 0 && (
+            <div className="p-3 bg-background/50 border border-border rounded-xl space-y-2">
+              <p className="text-xs font-semibold text-muted-text uppercase tracking-wider">Status Overview</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <span className="text-[11px] text-emerald-500 font-semibold block">In Review</span>
+                  <span className="text-lg font-bold text-emerald-500">{data.reviewVsNew?.reviewing || 0}</span>
+                </div>
+                <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                  <span className="text-[11px] text-primary font-semibold block">Unreviewed (New)</span>
+                  <span className="text-lg font-bold text-primary">{data.reviewVsNew?.unreviewed || 0}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {difficultyData.length > 0 ? (
-            <div className="h-64">
+            <div className="h-52">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={difficultyData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={50}
+                    outerRadius={70}
                     paddingAngle={5}
                     dataKey="value"
                     stroke="none"
@@ -212,17 +236,17 @@ export default function StatsDashboard() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-4 mt-2">
+              <div className="flex justify-center gap-3 mt-1">
                 {difficultyData.map(d => (
-                  <div key={d.name} className="flex items-center gap-1.5 text-sm font-medium">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }} />
+                  <div key={d.name} className="flex items-center gap-1.5 text-xs font-medium">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
                     {d.name} ({d.value})
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="h-64 flex flex-col items-center justify-center text-muted-text">
+            <div className="h-44 flex flex-col items-center justify-center text-muted-text">
               <p>No problems found.</p>
               <Link href="/app/decks" className="text-primary hover:underline mt-2">Add some problems</Link>
             </div>
@@ -264,7 +288,19 @@ export default function StatsDashboard() {
 
         {/* Upcoming Load */}
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-xl shadow-black/5 dark:shadow-black/40 md:col-span-2 lg:col-span-3">
-          <h2 className="text-lg font-bold mb-4">Upcoming Reviews (Next 7 Days)</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-bold">Upcoming Load (Next 7 Days)</h2>
+            <div className="flex items-center gap-4 text-xs font-semibold">
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-emerald-500"></span>
+                <span className="text-text">Reviews Due</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-sm bg-primary"></span>
+                <span className="text-text">New Problems</span>
+              </div>
+            </div>
+          </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.upcomingLoad} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -276,7 +312,8 @@ export default function StatsDashboard() {
                   contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--surface))', color: 'hsl(var(--text))' }} 
                   labelFormatter={formatDate}
                 />
-                <Bar dataKey="count" name="Reviews Due" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="reviews" name="Reviews Due" fill="#10b981" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="newCards" name="New Problems" fill="hsl(var(--primary))" stackId="a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

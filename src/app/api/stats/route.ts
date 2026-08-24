@@ -100,20 +100,20 @@ export async function GET(req: Request) {
     // 2. Upcoming Load
     const dailyNewLimit = dbUser?.dailyNewLimit || 5;
 
-    const upcomingLoadMap: Record<string, number> = {};
+    const upcomingLoadMap: Record<string, { reviews: number; newCards: number }> = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
-      upcomingLoadMap[formatLocal(d)] = 0;
+      upcomingLoadMap[formatLocal(d)] = { reviews: 0, newCards: 0 };
     }
 
     const todayStr = formatLocal(today);
-    upcomingLoadMap[todayStr] += overdueReviews.length;
+    upcomingLoadMap[todayStr].reviews += overdueReviews.length;
 
     upcomingReviews.forEach(r => {
       const dStr = formatLocal(r.nextReviewDate);
       if (upcomingLoadMap[dStr] !== undefined) {
-        upcomingLoadMap[dStr]++;
+        upcomingLoadMap[dStr].reviews++;
       }
     });
 
@@ -127,14 +127,22 @@ export async function GET(req: Request) {
       const dStr = formatLocal(d);
       const allowance = i === 0 ? todayAllowance : dailyNewLimit;
       const toAdd = Math.min(remainingNewCards, allowance);
-      upcomingLoadMap[dStr] += toAdd;
+      upcomingLoadMap[dStr].newCards += toAdd;
       remainingNewCards -= toAdd;
     }
 
     const upcomingLoad = Object.keys(upcomingLoadMap).sort().map(date => ({
       date,
-      count: upcomingLoadMap[date]
+      count: upcomingLoadMap[date].reviews + upcomingLoadMap[date].newCards,
+      reviews: upcomingLoadMap[date].reviews,
+      newCards: upcomingLoadMap[date].newCards,
     }));
+
+    // Status Breakdown (In Progress / Reviewing vs Unreviewed / New)
+    const reviewVsNew = {
+      reviewing: Math.max(0, problems.length - totalNewCards),
+      unreviewed: totalNewCards,
+    };
 
     // 3. Heatmap & Streaks
     const heatmapMap: Record<string, number> = {};
@@ -234,6 +242,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       difficulty,
       upcomingLoad,
+      reviewVsNew,
       heatmap,
       streak: { current: currentStreak, longest: longestStreak },
       weakTopics

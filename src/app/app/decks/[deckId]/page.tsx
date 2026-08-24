@@ -117,12 +117,20 @@ export default function DeckProblemsPage() {
       };
       const todayStr = formatLocal(today);
       
+      const isUnreviewed = !p.reviewState || p.reviewState.repetitions === 0;
       const revDate = p.reviewState ? formatLocal(new Date(p.reviewState.nextReviewDate)) : null;
 
-      if (filterStatus === 'NOT_SCHEDULED' && revDate !== null) return false;
-      if (filterStatus === 'OVERDUE' && (!revDate || revDate >= todayStr)) return false;
-      if (filterStatus === 'DUE_TODAY' && revDate !== todayStr) return false;
-      if (filterStatus === 'UPCOMING' && (!revDate || revDate <= todayStr)) return false;
+      if (filterStatus === 'UNREVIEWED') {
+        if (!isUnreviewed) return false;
+      } else if (filterStatus === 'NOT_SCHEDULED') {
+        if (p.reviewState !== null && p.reviewState !== undefined) return false;
+      } else if (filterStatus === 'OVERDUE') {
+        if (isUnreviewed || !revDate || revDate >= todayStr) return false;
+      } else if (filterStatus === 'DUE_TODAY') {
+        if (isUnreviewed || revDate !== todayStr) return false;
+      } else if (filterStatus === 'UPCOMING') {
+        if (isUnreviewed || !revDate || revDate <= todayStr) return false;
+      }
     }
 
     return true;
@@ -185,9 +193,10 @@ export default function DeckProblemsPage() {
             onChange={e => setFilterStatus(e.target.value)}
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
           >
-            <option value="ALL">All</option>
-            <option value="OVERDUE">Overdue</option>
+            <option value="ALL">All Statuses</option>
+            <option value="UNREVIEWED">Unreviewed (New)</option>
             <option value="DUE_TODAY">Due Today</option>
+            <option value="OVERDUE">Overdue</option>
             <option value="UPCOMING">Upcoming</option>
             <option value="NOT_SCHEDULED">Not Scheduled</option>
           </select>
@@ -235,7 +244,7 @@ export default function DeckProblemsPage() {
       <div className="bg-surface rounded-xl shadow-xl shadow-black/5 dark:shadow-black/40 border border-border overflow-hidden">
         {filteredProblems.length === 0 ? (
           <div className="p-8 text-center text-muted-text">
-            No problems in this deck yet.
+            No problems match the selected filters.
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -249,30 +258,48 @@ export default function DeckProblemsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredProblems.map(problem => (
-                <tr key={problem.id} className="border-b border-border hover:bg-background/50 transition">
-                  <td className="p-4">
-                    <Link href={`/app/study?problemId=${problem.id}`} className="text-text font-medium hover:text-primary transition-colors">
-                      {problem.title}
-                    </Link>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${difficultyColors[problem.difficulty]}`}>
-                      {problem.difficulty}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {problem.tags?.map((t: any) => (
-                        <span key={t.id} className="bg-background border border-border text-muted-text text-xs px-2 py-0.5 rounded shadow-sm">
-                          {t.name}
+              {filteredProblems.map(problem => {
+                const isUnreviewed = !problem.reviewState || problem.reviewState.repetitions === 0;
+                return (
+                  <tr key={problem.id} className="border-b border-border hover:bg-background/50 transition">
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Link href={`/app/study?problemId=${problem.id}`} className="text-text font-medium hover:text-primary transition-colors">
+                          {problem.title}
+                        </Link>
+                        {isUnreviewed && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                            Unreviewed
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${difficultyColors[problem.difficulty]}`}>
+                        {problem.difficulty}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {problem.tags?.map((t: any) => (
+                          <span key={t.id} className="bg-background border border-border text-muted-text text-xs px-2 py-0.5 rounded shadow-sm">
+                            {t.name}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-muted-text">
+                      {isUnreviewed ? (
+                        <span className="text-primary font-medium text-xs bg-primary/5 px-2 py-1 rounded border border-primary/10">
+                          Unreviewed (New)
                         </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-muted-text">
-                    {problem.reviewState ? new Date(problem.reviewState.nextReviewDate).toLocaleDateString() : 'Not scheduled'}
-                  </td>
+                      ) : problem.reviewState ? (
+                        new Date(problem.reviewState.nextReviewDate).toLocaleDateString()
+                      ) : (
+                        'Not scheduled'
+                      )}
+                    </td>
                   <td className="p-4 text-right space-x-3">
                     <button
                       onClick={() => { setEditingProblem(problem); setIsModalOpen(true); }}
@@ -287,8 +314,9 @@ export default function DeckProblemsPage() {
                       Delete
                     </button>
                   </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
