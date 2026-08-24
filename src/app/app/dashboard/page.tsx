@@ -15,9 +15,9 @@ export default function Dashboard() {
       user.getIdToken().then(async (token) => {
         try {
           const headers = { Authorization: `Bearer ${token}` };
-          const [decksRes, queueRes] = await Promise.all([
+          const [decksRes, countRes] = await Promise.all([
             fetch('/api/decks', { headers }),
-            fetch('/api/reviews/queue', { headers })
+            fetch('/api/reviews/queue/count', { headers })
           ]);
           
           let decksCount = 0;
@@ -29,9 +29,9 @@ export default function Dashboard() {
             decksCount = decksData.length;
             problemsCount = decksData.reduce((acc: number, d: any) => acc + (d._count?.problems || 0), 0);
           }
-          if (queueRes.ok) {
-            const queueData = await queueRes.json();
-            dueCount = queueData.length;
+          if (countRes.ok) {
+            const countData = await countRes.json();
+            dueCount = countData.count ?? 0;
           }
 
           setStats({ decks: decksCount, problems: problemsCount, due: dueCount });
