@@ -7,7 +7,7 @@ import { Library, PlayCircle, Hash, TrendingUp, Sparkles } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ decks: 0, problems: 0, due: 0 });
+  const [stats, setStats] = useState({ decks: 0, problems: 0, due: 0, reviewCount: 0, newCount: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +23,8 @@ export default function Dashboard() {
           let decksCount = 0;
           let problemsCount = 0;
           let dueCount = 0;
+          let reviewCount = 0;
+          let newCount = 0;
 
           if (decksRes.ok) {
             const decksData = await decksRes.json();
@@ -31,10 +33,12 @@ export default function Dashboard() {
           }
           if (countRes.ok) {
             const countData = await countRes.json();
-            dueCount = countData.count ?? 0;
+            dueCount = countData.total ?? countData.count ?? 0;
+            reviewCount = countData.reviewCount ?? 0;
+            newCount = countData.newCount ?? 0;
           }
 
-          setStats({ decks: decksCount, problems: problemsCount, due: dueCount });
+          setStats({ decks: decksCount, problems: problemsCount, due: dueCount, reviewCount, newCount });
         } catch (e) {
           console.error(e);
         } finally {
@@ -75,7 +79,11 @@ export default function Dashboard() {
           <h3 className="text-3xl font-bold mb-1">
             {loading ? <div className="h-9 bg-background rounded w-16 animate-pulse"></div> : stats.due}
           </h3>
-          <p className="text-muted-text font-medium">Reviews Due Today</p>
+          <p className="text-muted-text font-medium">
+            {stats.due > 0 && (stats.reviewCount > 0 || stats.newCount > 0)
+              ? `${stats.reviewCount} due · ${stats.newCount} new today`
+              : 'Reviews Due Today'}
+          </p>
         </div>
 
         {/* Stat Card 2 */}
@@ -109,7 +117,7 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold mb-3">Jump back in!</h2>
           <p className="text-muted-text mb-8 max-w-sm">
             {stats.due > 0 
-              ? `You have ${stats.due} reviews waiting for you. Consistency is key to long-term memory.`
+              ? `You have ${stats.due} items waiting (${stats.reviewCount} reviews + ${stats.newCount} new problems). Consistency is key to long-term memory.`
               : `You are all caught up for today! Why not add some new problems to your decks?`}
           </p>
           <Link 

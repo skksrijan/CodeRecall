@@ -46,8 +46,14 @@ export async function GET(req: Request) {
     });
 
     const newCount = Math.min(totalNew, remainingNew);
+    const total = reviewCount + newCount;
 
-    return NextResponse.json({ count: reviewCount + newCount });
+    return NextResponse.json({
+      count: total,
+      total,
+      reviewCount,
+      newCount,
+    });
   } catch (error) {
     console.error('Error fetching review count:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

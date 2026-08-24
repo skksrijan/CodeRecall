@@ -15,6 +15,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 interface ReviewState {
   id: string;
   nextReviewDate: string;
+  repetitions?: number;
+  interval?: number;
+  easeFactor?: number;
 }
 
 interface Tag {
@@ -32,6 +35,7 @@ interface Problem {
   language?: string;
   tags: Tag[];
   reviewState: ReviewState;
+  _cardType?: 'new' | 'review';
 }
 
 const QUALITY_SCORES = [
@@ -41,6 +45,12 @@ const QUALITY_SCORES = [
   { value: 3, label: 'Hard', description: 'Correct, but took significant effort', color: 'bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/50', key: '3' },
   { value: 4, label: 'Good', description: 'Correct, after some hesitation', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '4' },
   { value: 5, label: 'Easy', description: 'Correct and effortless', color: 'bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 border-cyan-500/50', key: '5' },
+];
+
+const NEW_CARD_SCORES = [
+  { value: 0, label: 'Never seen this', description: 'Learn from scratch (Interval: 1 day)', color: 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border-red-500/50', key: '1' },
+  { value: 3, label: 'Seen but rusty', description: 'Need practice soon (Interval: 1 day)', color: 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border-amber-500/50', key: '2' },
+  { value: 5, label: 'Know it well', description: 'Fast-track to longer interval (4+ days)', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '3' },
 ];
 
 type TabType = 'description' | 'solution' | 'notes';
@@ -64,6 +74,8 @@ function StudyContent() {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalCount, setOriginalCount] = useState(0);
+  const [sessionStats, setSessionStats] = useState({ newCount: 0, reviewCount: 0 });
+  const [showFullScaleForNew, setShowFullScaleForNew] = useState(false);
 
   // New features state
   const [description, setDescription] = useState<string | null>(null);
@@ -126,6 +138,7 @@ function StudyContent() {
   const handleGrade = async (quality: number) => {
     if (queue.length === 0 || !user) return;
     const currentProblem = queue[0];
+    const isNew = currentProblem._cardType === 'new' || currentProblem.reviewState?.repetitions === 0;
     
     setIsSubmitting(true);
     try {
@@ -141,11 +154,17 @@ function StudyContent() {
       
       if (!res.ok) throw new Error('Failed to submit review');
       
+      setSessionStats(prev => ({
+        newCount: isNew ? prev.newCount + 1 : prev.newCount,
+        reviewCount: !isNew ? prev.reviewCount + 1 : prev.reviewCount,
+      }));
+
       if (manualProblemId) {
         setShowKeepStudying(true);
       } else {
         setQueue(prev => prev.slice(1));
         setIsRevealed(false);
+        setShowFullScaleForNew(false);
       }
       window.dispatchEvent(new Event('reviewCompleted'));
     } catch {
@@ -215,17 +234,24 @@ function StudyContent() {
         e.preventDefault();
         revealAnswer();
       } else if (isRevealed && !isSubmitting && !isInputFocused) {
-        if (e.key === '0') { e.preventDefault(); handleGrade(0); }
-        else if (e.key === '1') { e.preventDefault(); handleGrade(1); }
-        else if (e.key === '2') { e.preventDefault(); handleGrade(2); }
-        else if (e.key === '3') { e.preventDefault(); handleGrade(3); }
-        else if (e.key === '4') { e.preventDefault(); handleGrade(4); }
-        else if (e.key === '5') { e.preventDefault(); handleGrade(5); }
+        const isNew = queue[0]?._cardType === 'new' || queue[0]?.reviewState?.repetitions === 0;
+        if (isNew && !showFullScaleForNew) {
+          if (e.key === '1') { e.preventDefault(); handleGrade(0); }
+          else if (e.key === '2') { e.preventDefault(); handleGrade(3); }
+          else if (e.key === '3') { e.preventDefault(); handleGrade(5); }
+        } else {
+          if (e.key === '0') { e.preventDefault(); handleGrade(0); }
+          else if (e.key === '1') { e.preventDefault(); handleGrade(1); }
+          else if (e.key === '2') { e.preventDefault(); handleGrade(2); }
+          else if (e.key === '3') { e.preventDefault(); handleGrade(3); }
+          else if (e.key === '4') { e.preventDefault(); handleGrade(4); }
+          else if (e.key === '5') { e.preventDefault(); handleGrade(5); }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isRevealed, isSubmitting, queue]);
+  }, [isRevealed, isSubmitting, queue, showFullScaleForNew]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -248,6 +274,7 @@ function StudyContent() {
   }
 
   if (queue.length === 0) {
+    const totalDone = sessionStats.reviewCount + sessionStats.newCount;
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6 animate-in fade-in duration-500">
         <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 border border-success/20 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
@@ -256,12 +283,26 @@ function StudyContent() {
           </svg>
         </div>
         <h1 className="text-3xl font-bold">All caught up!</h1>
-        <p className="text-muted-text max-w-md">
-          No problems due for review right now. Take a break or add some new problems to your decks.
-        </p>
-        <Link href="/app/decks" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0">
-          Browse Decks
-        </Link>
+        {totalDone > 0 ? (
+          <div className="bg-surface border border-border p-5 rounded-2xl max-w-md w-full shadow-sm text-sm space-y-2">
+            <p className="font-semibold text-text text-base">Great work today! 🎉</p>
+            <p className="text-muted-text">
+              You reviewed <span className="text-emerald-500 font-bold">{sessionStats.reviewCount}</span> problem{sessionStats.reviewCount !== 1 ? 's' : ''} and learned <span className="text-primary font-bold">{sessionStats.newCount}</span> new one{sessionStats.newCount !== 1 ? 's' : ''}.
+            </p>
+          </div>
+        ) : (
+          <p className="text-muted-text max-w-md">
+            No problems due for review right now. Take a break or add some new problems to your decks.
+          </p>
+        )}
+        <div className="flex gap-4">
+          <Link href="/app/dashboard" className="bg-surface border border-border px-6 py-3 rounded-xl font-semibold hover:bg-background transition">
+            Dashboard
+          </Link>
+          <Link href="/app/decks" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0">
+            Browse Decks
+          </Link>
+        </div>
       </div>
     );
   }
@@ -301,6 +342,7 @@ function StudyContent() {
 
   const currentCard = queue[0];
   const currentIndex = originalCount - queue.length + 1;
+  const isNewCard = currentCard._cardType === 'new' || currentCard.reviewState?.repetitions === 0;
   
   // Dynamic timer based on difficulty
   const getWarningThreshold = (difficulty: string) => {
@@ -336,8 +378,8 @@ function StudyContent() {
       <div className="flex justify-between items-center shrink-0 px-6 py-4">
         <h1 className="text-xl font-bold">Study Session</h1>
         <div className="flex items-center gap-4">
-          <div className={`text-sm font-mono font-medium px-3 py-1.5 rounded-lg border transition-colors ${isTimerWarning ? 'bg-danger/10 text-danger border-danger/20' : 'bg-surface border-border text-muted-text'}`}>
-            ⏱ {formatTime(elapsedSeconds)}
+          <div className={`text-sm font-mono font-medium px-3 py-1.5 rounded-lg border transition-all ${isTimerWarning ? 'bg-danger/15 text-danger border-danger/40 animate-pulse font-bold shadow-sm' : 'bg-surface border-border text-muted-text'}`}>
+            ⏱ {formatTime(elapsedSeconds)} {isTimerWarning && '⚠️'}
           </div>
           <span className="text-sm font-medium text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 shadow-sm">
             Card {currentIndex} of {originalCount}
@@ -383,7 +425,7 @@ function StudyContent() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h2 className="text-xl font-bold mb-3">{currentCard.title}</h2>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm ${
                           currentCard.difficulty === 'EASY' ? 'bg-success/10 text-success border border-success/20' :
                           currentCard.difficulty === 'MEDIUM' ? 'bg-warning/10 text-warning border border-warning/20' :
@@ -391,6 +433,16 @@ function StudyContent() {
                         }`}>
                           {currentCard.difficulty}
                         </span>
+                        {isNewCard ? (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                            🆕 New Problem
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1.5 shadow-sm">
+                            🔄 Review
+                          </span>
+                        )}
                       </div>
                     </div>
                     {currentCard.leetcodeUrl && (
@@ -652,9 +704,52 @@ function StudyContent() {
                 <span className="opacity-60 text-sm font-normal ml-2 hidden md:inline">(Ctrl + &apos;)</span>
               </button>
             </div>
+          ) : isNewCard && !showFullScaleForNew ? (
+            <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300 space-y-3">
+              <div className="text-center">
+                <h3 className="font-bold text-text text-sm flex items-center justify-center gap-1.5">
+                  <span>🆕</span> Rate your initial familiarity
+                </h3>
+                <p className="text-[11px] text-muted-text mt-0.5">
+                  Since this is a new problem, setting your familiarity sets its initial review schedule.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {NEW_CARD_SCORES.map(score => (
+                  <button
+                    key={score.value}
+                    onClick={() => handleGrade(score.value)}
+                    disabled={isSubmitting}
+                    className={`flex flex-col items-center p-3 rounded-xl border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-xs">{score.label}</span>
+                      {score.key && <span className="opacity-100 text-[10px] font-bold font-mono border-2 border-current bg-background/30 rounded px-1.5 hidden sm:inline">{score.key}</span>}
+                    </div>
+                    <span className="text-[10px] opacity-80 text-center leading-tight">{score.description}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowFullScaleForNew(true)}
+                  className="text-xs text-muted-text hover:text-text transition-colors underline"
+                >
+                  Switch to standard 0–5 scale
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300">
-              <h3 className="text-center font-bold mb-3 text-text text-sm">How well did you remember this?</h3>
+            <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300 space-y-3">
+              <div className="text-center">
+                <h3 className="font-bold text-text text-sm">How well did you remember this?</h3>
+                {isTimerWarning && (
+                  <p className="text-[11px] text-danger mt-0.5 font-medium">
+                    ⚠️ You took longer than expected for this {currentCard.difficulty.toLowerCase()} problem.
+                  </p>
+                )}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {QUALITY_SCORES.map(score => {
                   const isSuggested = score.value === suggestedGrade;
@@ -663,10 +758,10 @@ function StudyContent() {
                       key={score.value}
                       onClick={() => handleGrade(score.value)}
                       disabled={isSubmitting}
-                      className={`flex flex-col items-center p-2 rounded-lg border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'} ${isSuggested ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                      className={`flex flex-col items-center p-2 rounded-lg border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'} ${isSuggested ? 'ring-2 ring-primary ring-offset-2 ring-offset-background font-bold shadow-md' : ''}`}
                     >
                       {isSuggested && (
-                        <span className="absolute -top-2.5 bg-primary text-background text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        <span className="absolute -top-2.5 bg-primary text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md animate-bounce">
                           Suggested
                         </span>
                       )}
@@ -679,6 +774,17 @@ function StudyContent() {
                   );
                 })}
               </div>
+              {isNewCard && (
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowFullScaleForNew(false)}
+                    className="text-xs text-muted-text hover:text-text transition-colors underline"
+                  >
+                    Back to simplified 3-point scale
+                  </button>
+                </div>
+              )}
             </div>
           )}
           

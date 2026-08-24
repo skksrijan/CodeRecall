@@ -8,6 +8,7 @@ import * as Sentry from '@sentry/nextjs';
 
 const ImportSchema = z.object({
   url: z.string().min(1, 'URL is required'),
+  familiarity: z.enum(['all_new', 'mixed', 'studied']).optional().default('all_new'),
 });
 
 export async function POST(req: Request, { params }: { params: { deckId: string } }) {
@@ -37,7 +38,7 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
       return NextResponse.json({ error: 'Invalid parameters', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { url } = parsed.data;
+    const { url, familiarity } = parsed.data;
 
     // Check if the user owns the deck
     const deck = await prisma.deck.findUnique({
@@ -197,6 +198,16 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
 
     // Bulk Insert into Prisma
     const now = new Date();
+    let initialInterval = 0;
+    let initialRepetitions = 0;
+    let initialNextReviewDate = now;
+
+    if (familiarity === 'studied') {
+      initialInterval = 3;
+      initialRepetitions = 1;
+      initialNextReviewDate = new Date();
+      initialNextReviewDate.setDate(initialNextReviewDate.getDate() + 3);
+    }
     
     // We cannot use prisma.problem.createMany because we want to connect to a deck.
     // Actually, createMany doesn't support nested relations easily, so we can use a transaction.
@@ -219,9 +230,9 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
             },
             reviewState: {
               create: {
-                nextReviewDate: now,
-                interval: 0,
-                repetitions: 0,
+                nextReviewDate: initialNextReviewDate,
+                interval: initialInterval,
+                repetitions: initialRepetitions,
                 easeFactor: 2.5
               }
             }

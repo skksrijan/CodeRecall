@@ -186,13 +186,18 @@ export default function SettingsPage() {
 
           <div>
             <label className="block text-sm font-semibold text-muted-text mb-2">Daily New Problems Limit</label>
-            <p className="text-xs text-muted-text mb-2">Maximum number of new (unreviewed) problems to add to your queue each day.</p>
+            <p className="text-xs text-muted-text mb-2">
+              Each day, you&apos;ll first review all problems that are due, then receive up to this many NEW problems from your imported decks. Set to 0 to pause learning new problems while catching up on reviews.
+            </p>
             <input 
               type="number" 
-              min={1}
+              min={0}
               max={100}
               value={dailyNewLimit} 
-              onChange={e => setDailyNewLimit(parseInt(e.target.value) || 5)}
+              onChange={e => {
+                const val = parseInt(e.target.value, 10);
+                setDailyNewLimit(isNaN(val) ? 0 : Math.max(0, Math.min(100, val)));
+              }}
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
           </div>

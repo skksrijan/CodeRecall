@@ -12,6 +12,7 @@ interface ImportModalProps {
 export default function ImportModal({ isOpen, onClose, onImported, token, decks }: ImportModalProps) {
   const [url, setUrl] = useState('');
   const [deckId, setDeckId] = useState('');
+  const [familiarity, setFamiliarity] = useState<'all_new' | 'mixed' | 'studied'>('all_new');
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
@@ -29,7 +30,7 @@ export default function ImportModal({ isOpen, onClose, onImported, token, decks 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url, familiarity })
       });
 
       const data = await res.json();
@@ -64,7 +65,7 @@ export default function ImportModal({ isOpen, onClose, onImported, token, decks 
               type="text"
               required
               placeholder="e.g. https://leetcode.com/list/xyz123"
-              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow text-sm"
               value={url}
               onChange={e => setUrl(e.target.value)}
             />
@@ -73,7 +74,7 @@ export default function ImportModal({ isOpen, onClose, onImported, token, decks 
             <label className="block text-sm font-medium mb-1">Target Deck</label>
             <select
               required
-              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+              className="w-full bg-background border border-border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow text-sm"
               value={deckId}
               onChange={e => setDeckId(e.target.value)}
             >
@@ -82,6 +83,53 @@ export default function ImportModal({ isOpen, onClose, onImported, token, decks 
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Your Familiarity With These Problems</label>
+            <div className="space-y-2 text-xs">
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${familiarity === 'all_new' ? 'border-primary bg-primary/10' : 'border-border hover:bg-background'}`}>
+                <input
+                  type="radio"
+                  name="familiarity"
+                  value="all_new"
+                  checked={familiarity === 'all_new'}
+                  onChange={() => setFamiliarity('all_new')}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="font-semibold text-text">Brand New</p>
+                  <p className="text-muted-text">Trickle in via your daily new limit alongside regular reviews.</p>
+                </div>
+              </label>
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${familiarity === 'mixed' ? 'border-primary bg-primary/10' : 'border-border hover:bg-background'}`}>
+                <input
+                  type="radio"
+                  name="familiarity"
+                  value="mixed"
+                  checked={familiarity === 'mixed'}
+                  onChange={() => setFamiliarity('mixed')}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="font-semibold text-text">Mixed Knowledge</p>
+                  <p className="text-muted-text">Self-rate each problem on first exposure (Never seen vs Know well).</p>
+                </div>
+              </label>
+              <label className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${familiarity === 'studied' ? 'border-primary bg-primary/10' : 'border-border hover:bg-background'}`}>
+                <input
+                  type="radio"
+                  name="familiarity"
+                  value="studied"
+                  checked={familiarity === 'studied'}
+                  onChange={() => setFamiliarity('studied')}
+                  className="mt-0.5"
+                />
+                <div>
+                  <p className="font-semibold text-text">Already Solved Most</p>
+                  <p className="text-muted-text">Skip initial intake and schedule directly for review in 3 days.</p>
+                </div>
+              </label>
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <button

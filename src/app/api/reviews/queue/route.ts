@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const dailyNewLimit = dbUser?.dailyNewLimit || 5;
 
     // Fetch review cards (due today, repetitions > 0)
-    const reviewCards = await prisma.problem.findMany({
+    const rawReviewCards = await prisma.problem.findMany({
       where: {
         userId: user.id,
         reviewState: {
@@ -26,6 +26,11 @@ export async function GET(req: Request) {
       include: { tags: true, reviewState: true },
       orderBy: { reviewState: { nextReviewDate: 'asc' } }
     });
+
+    const reviewCards = rawReviewCards.map((card) => ({
+      ...card,
+      _cardType: 'review' as const,
+    }));
 
     // Check how many NEW cards were reviewed today
     const startOfDay = new Date();
@@ -43,7 +48,7 @@ export async function GET(req: Request) {
 
     let newCards: any[] = [];
     if (remainingNewCards > 0) {
-      newCards = await prisma.problem.findMany({
+      const rawNewCards = await prisma.problem.findMany({
         where: {
           userId: user.id,
           reviewState: { repetitions: 0 }
@@ -52,14 +57,15 @@ export async function GET(req: Request) {
         orderBy: { createdAt: 'asc' },
         take: remainingNewCards
       });
+
+      newCards = rawNewCards.map((card) => ({
+        ...card,
+        _cardType: 'new' as const,
+      }));
     }
 
-    // Combine and sort by nextReviewDate
-    const combinedQueue = [...reviewCards, ...newCards].sort((a, b) => {
-      const dateA = new Date(a.reviewState!.nextReviewDate).getTime();
-      const dateB = new Date(b.reviewState!.nextReviewDate).getTime();
-      return dateA - dateB;
-    });
+    // Due reviews always take priority, followed by new cards for today
+    const combinedQueue = [...reviewCards, ...newCards];
 
     return NextResponse.json(combinedQueue);
   } catch (error) {
