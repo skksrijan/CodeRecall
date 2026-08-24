@@ -1,8 +1,15 @@
 import { withSentryConfig } from "@sentry/nextjs";
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['firebase-admin'],
+    serverComponentsExternalPackages: ['firebase-admin', 'jwks-rsa', 'jose'],
+  },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'firebase-admin', 'jwks-rsa', 'jose'];
+    }
+    return config;
   },
 };
 
