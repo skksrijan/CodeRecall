@@ -1,17 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['firebase-admin', 'jwks-rsa', 'jose'],
-  },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'firebase-admin', 'jwks-rsa', 'jose'];
-    }
-    return config;
-  },
-};
+const nextConfig = {};
 
 // Only wrap with Sentry in production builds to avoid dev overhead
 const finalConfig = process.env.NODE_ENV === 'production'

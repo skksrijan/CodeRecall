@@ -1,16 +1,26 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+const JWKS = createRemoteJWKSet(
+  new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
+);
 
-const adminAuth = getAuth();
+export const adminAuth = {
+  async verifyIdToken(token: string) {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!projectId) {
+      throw new Error('NEXT_PUBLIC_FIREBASE_PROJECT_ID is not set in environment variables');
+    }
 
-export { adminAuth };
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: `https://securetoken.google.com/${projectId}`,
+      audience: projectId,
+    });
+
+    return {
+      uid: payload.sub as string,
+      email: payload.email as string | undefined,
+      name: (payload.name || payload.display_name) as string | undefined,
+      ...payload,
+    };
+  }
+};
