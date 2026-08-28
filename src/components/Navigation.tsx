@@ -11,12 +11,14 @@ export default function Navigation() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [dueCount, setDueCount] = useState<number | null>(null);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const currentTheme = mounted ? (resolvedTheme || theme) : 'dark';
 
   useEffect(() => {
     if (user) {
@@ -100,11 +102,11 @@ export default function Navigation() {
                   </kbd>
                 </button>
                 <button
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
                   className="p-1.5 rounded-md text-muted-text hover:text-text hover:bg-background border border-border transition-colors"
                   aria-label="Toggle theme"
                 >
-                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {currentTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
               </>
             )}

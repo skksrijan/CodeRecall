@@ -42,6 +42,7 @@
   * {
     @apply border-border;
   }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--text));
@@ -73,7 +74,69 @@
   .text-balance {
     text-wrap: balance;
   }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Technical Grid Lines */
+  .bg-tech-grid {
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  }
+
+  .dark .bg-tech-grid {
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  }
+
+  .bg-tech-dots {
+    background-size: 24px 24px;
+    background-image: radial-gradient(circle, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  }
+
+  .dark .bg-tech-dots {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  }
+
+  /* Technical borders & surfaces */
+  .tech-card {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .tech-card {
+    background-color: #0d0f14;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  }
+
+  .tech-card-subtle {
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.07);
+  }
+
+  .dark .tech-card-subtle {
+    background-color: rgba(13, 15, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Terminal cursor */
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background-color: #10b981;
+    vertical-align: middle;
+    animation: blinkCursor 1s step-end infinite;
+  }
+}
+
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
