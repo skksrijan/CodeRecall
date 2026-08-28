@@ -29,7 +29,8 @@ export async function GET(req: Request) {
       totalNewCards,
       newCardsReviewedToday,
       allReviews,
-      tagsWithReviews
+      tagsWithReviews,
+      decksCount
     ] = await Promise.all([
       // 1. Difficulty Breakdown
       prisma.problem.findMany({
@@ -87,6 +88,10 @@ export async function GET(req: Request) {
             }
           }
         }
+      }),
+      // 9. Decks count
+      prisma.deck.count({
+        where: { userId: user.id }
       })
     ]);
 
@@ -245,7 +250,12 @@ export async function GET(req: Request) {
       reviewVsNew,
       heatmap,
       streak: { current: currentStreak, longest: longestStreak },
-      weakTopics
+      weakTopics,
+      decksCount: decksCount || 0,
+      problemsCount: problems.length || 0,
+      dueToday: upcomingLoadMap[todayStr]?.reviews || 0,
+      newToday: upcomingLoadMap[todayStr]?.newCards || 0,
+      due: (upcomingLoadMap[todayStr]?.reviews || 0) + (upcomingLoadMap[todayStr]?.newCards || 0),
     });
   } catch (error) {
     console.error('Stats error:', error);
