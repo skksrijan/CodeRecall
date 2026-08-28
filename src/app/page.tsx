@@ -42,9 +42,6 @@ export default function HomePage() {
             <span className="text-base font-bold tracking-tight text-text font-mono">
               CodeRecall
             </span>
-            <span className="font-mono text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-              SM-2
-            </span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-7 text-xs font-mono uppercase tracking-wider text-muted-text">
@@ -68,84 +65,86 @@ export default function HomePage() {
             {user ? (
               <Link
                 href="/app/dashboard"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-text text-background hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
+                className="px-4 py-2 rounded-lg bg-text text-background text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
               >
-                Dashboard -&gt;
+                Go to Workbench -&gt;
               </Link>
             ) : (
-              <div className="flex items-center gap-2">
+              <>
                 <Link
                   href="/login"
-                  className="px-3.5 py-2 rounded-lg text-xs font-medium text-muted-text hover:text-text hover:bg-surface transition-colors"
+                  className="px-3 py-1.5 text-xs text-muted-text hover:text-text transition-colors uppercase tracking-wider"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
+                  className="px-4 py-2 rounded-lg bg-text text-background text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
                 >
-                  Start Free -&gt;
+                  Get Started -&gt;
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="pt-16 pb-20 md:pt-24 md:pb-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center">
-        {/* Technical Label */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium bg-primary/10 border border-primary/20 text-primary mb-8">
-          <span>[SYSTEM: SM-2 ACTIVE RECALL FOR LEETCODE &amp; CODING INTERVIEWS]</span>
+      <section className="relative pt-16 pb-20 overflow-hidden border-b border-border/80">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-surface text-xs font-mono text-muted-text shadow-sm mb-6">
+            <span>[SPACED ACTIVE RECALL FOR CODING INTERVIEWS]</span>
+          </div>
+
+          {/* Hero Title */}
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl mx-auto mb-6 text-balance text-text">
+            The Forgetting Curve is Predictable.{' '}
+            <span className="text-primary underline decoration-primary/40 underline-offset-8">
+              Your Retention Should Be Too.
+            </span>
+          </h1>
+
+          {/* Hero Subtitle */}
+          <p className="text-base sm:text-lg text-muted-text max-w-2xl mx-auto mb-10 leading-relaxed text-balance font-normal">
+            Stop grinding 400+ LeetCode problems blindly. CodeRecall schedules reviews at the exact mathematical inflection point before neural decay sets in — cutting prep time in half with permanent pattern mastery.
+          </p>
+
+          {/* CTA Button Group */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-12 font-mono">
+            <Link
+              href={user ? "/app/dashboard" : "/signup"}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm bg-text text-background hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
+            >
+              <span>{user ? "Open Workbench ->" : "Start Practicing Free ->"}</span>
+            </Link>
+            <a
+              href="#how-it-works"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm bg-surface hover:bg-background border border-border text-text transition-colors uppercase tracking-wider"
+            >
+              <span>[ See Workflow ]</span>
+            </a>
+          </div>
+
+          {/* Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-xs text-muted-text font-mono">
+            <div className="flex items-center gap-1.5">
+              <span className="text-success font-bold">[✓]</span>
+              <span>100% Free &amp; Open System</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-success font-bold">[✓]</span>
+              <span>1-Click Curated Decks</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-success font-bold">[✓]</span>
+              <span>Zero Credit Card Required</span>
+            </div>
+          </div>
         </div>
 
-        {/* Hero Title */}
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl mx-auto mb-6 text-balance text-text">
-          The Forgetting Curve is Predictable.{' '}
-          <span className="text-primary underline decoration-primary/40 underline-offset-8">
-            Your Retention Should Be Too.
-          </span>
-        </h1>
-
-        {/* Hero Subtitle */}
-        <p className="text-base sm:text-lg text-muted-text max-w-2xl mx-auto mb-10 leading-relaxed text-balance font-normal">
-          Stop grinding 400+ LeetCode problems blindly. CodeRecall schedules reviews at the exact mathematical inflection point before neural decay sets in — cutting prep time in half with permanent pattern mastery.
-        </p>
-
-        {/* CTA Button Group */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 mb-12 font-mono">
-          <Link
-            href={user ? "/app/dashboard" : "/signup"}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm bg-text text-background hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
-          >
-            <span>{user ? "Open Workbench ->" : "Start Practicing Free ->"}</span>
-          </Link>
-          <a
-            href="#how-it-works"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium text-sm bg-surface hover:bg-background border border-border text-text transition-colors uppercase tracking-wider"
-          >
-            <span>[ See Workflow ]</span>
-          </a>
-        </div>
-
-        {/* Trust Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-xs text-muted-text font-mono">
-          <div className="flex items-center gap-1.5">
-            <span className="text-success font-bold">[✓]</span>
-            <span>100% Free &amp; Open System</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-success font-bold">[✓]</span>
-            <span>1-Click Blind 75 / NeetCode Import</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-success font-bold">[✓]</span>
-            <span>Zero Credit Card Required</span>
-          </div>
-        </div>
-
-        {/* Interactive SM-2 Simulator / Card Workbench Preview */}
-        <div className="mt-14 text-left border border-border rounded-xl bg-surface shadow-2xl overflow-hidden">
+        {/* Interactive Simulator / Card Workbench Preview */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
+          <div className="text-left border border-border rounded-xl bg-surface shadow-2xl overflow-hidden">
           {/* Card Header Bar */}
           <div className="flex items-center justify-between px-4 py-3 bg-background border-b border-border text-xs font-mono text-muted-text">
             <div className="flex items-center gap-2">
@@ -253,6 +252,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </div>
       </section>
 
       {/* The Problem & Solution Section */}

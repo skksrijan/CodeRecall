@@ -5,11 +5,19 @@ import { Difficulty } from '@prisma/client';
 import { z } from 'zod';
 import { strictRateLimit } from '@/lib/rate-limit';
 import * as Sentry from '@sentry/nextjs';
+import { CURATED_LISTS } from '@/lib/curatedLists';
 
 const ImportSchema = z.object({
-  url: z.string().min(1, 'URL is required'),
+  url: z.string().min(1, 'URL or study plan name is required'),
   familiarity: z.enum(['all_new', 'mixed', 'studied']).optional().default('all_new'),
 });
+
+const LEETCODE_HEADERS = {
+  'Content-Type': 'application/json',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Referer': 'https://leetcode.com',
+  'Origin': 'https://leetcode.com'
+};
 
 export async function POST(req: Request, { params }: { params: { deckId: string } }) {
   const authResult = await verifyAuth(req);
@@ -51,17 +59,93 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
 
     let problemsToAdd: { title: string, titleSlug: string, difficulty: Difficulty, tags: string[] }[] = [];
 
-    // Parse LeetCode URL
-    if (url.includes('/list/') || url.includes('/problem-list/')) {
-      // It's a list URL
+    // 1. Check if user typed a curated list identifier directly (e.g. "blind-75", "top-interview-150")
+    const cleanInput = url.trim().toLowerCase();
+    const matchedCurated = CURATED_LISTS.find(l =>
+      l.id === cleanInput ||
+      cleanInput.includes(l.id) ||
+      cleanInput === l.name.toLowerCase()
+    );
+
+    if (matchedCurated) {
+      problemsToAdd = matchedCurated.problems.map(p => ({
+        title: p.title,
+        titleSlug: p.titleSlug,
+        difficulty: p.difficulty as Difficulty,
+        tags: p.tags
+      }));
+    } else if (url.includes('/studyplan/') || url.includes('/study-plan/')) {
+      // 2. Study Plan URL (e.g. https://leetcode.com/studyplan/top-interview-150/)
+      const match = url.match(/\/(?:studyplan|study-plan)\/([a-zA-Z0-9_-]+)/);
+      if (!match) return NextResponse.json({ error: 'Invalid study plan URL' }, { status: 400 });
+      const slug = match[1];
+
+      // Check if we have pre-curated data for this slug
+      const preCurated = CURATED_LISTS.find(l => l.id === slug);
+      if (preCurated) {
+        problemsToAdd = preCurated.problems.map(p => ({
+          title: p.title,
+          titleSlug: p.titleSlug,
+          difficulty: p.difficulty as Difficulty,
+          tags: p.tags
+        }));
+      } else {
+        const query = `
+          query studyPlanV2Detail($planSlug: String!) {
+            studyPlanV2Detail(planSlug: $planSlug) {
+              planSubGroups {
+                questions {
+                  title
+                  titleSlug
+                  difficulty
+                  topicTags {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const res = await fetch('https://leetcode.com/graphql', {
+          method: 'POST',
+          headers: LEETCODE_HEADERS,
+          body: JSON.stringify({ query, variables: { planSlug: slug } })
+        });
+        const data = await res.json();
+
+        if (!data.data?.studyPlanV2Detail?.planSubGroups) {
+          return NextResponse.json({ error: 'Could not fetch problems from study plan. Make sure the plan exists on LeetCode.' }, { status: 400 });
+        }
+
+        data.data.studyPlanV2Detail.planSubGroups.forEach((group: any) => {
+          if (group.questions) {
+            group.questions.forEach((q: any) => {
+              problemsToAdd.push({
+                title: q.title,
+                titleSlug: q.titleSlug,
+                difficulty: q.difficulty.toUpperCase() as Difficulty,
+                tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
+              });
+            });
+          }
+        });
+      }
+    } else if (url.includes('/list/') || url.includes('/problem-list/')) {
+      // 3. Problem List URL (e.g. /problem-list/75-blind/ or /list/55291811)
       const match = url.match(/\/(?:list|problem-list)\/([a-zA-Z0-9_-]+)/);
       if (!match) return NextResponse.json({ error: 'Invalid list URL' }, { status: 400 });
       const slug = match[1];
-      
-      const query = `
-        query favoriteQuestionList($favoriteSlug: String!) {
-          favoriteQuestionList(favoriteSlug: $favoriteSlug) {
-            questions {
+
+      // Try problemsetQuestionList first (for public lists)
+      const problemsetQuery = `
+        query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+          problemsetQuestionList: questionList(
+            categorySlug: $categorySlug
+            limit: $limit
+            skip: $skip
+            filters: $filters
+          ) {
+            questions: data {
               title
               titleSlug
               difficulty
@@ -72,33 +156,29 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
           }
         }
       `;
-      const res = await fetch('https://leetcode.com/graphql', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-        body: JSON.stringify({ query, variables: { favoriteSlug: slug } })
-      });
-      const data = await res.json();
-      
-      if (!data.data?.favoriteQuestionList?.questions || data.data.favoriteQuestionList.questions.length === 0) {
-        return NextResponse.json({ error: 'Could not fetch problems from list. Make sure the list is public.' }, { status: 400 });
-      }
 
-      problemsToAdd = data.data.favoriteQuestionList.questions.map((q: any) => ({
-        title: q.title,
-        titleSlug: q.titleSlug,
-        difficulty: q.difficulty.toUpperCase() as Difficulty,
-        tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
-      }));
-    } else if (url.includes('/studyplan/') || url.includes('/study-plan/')) {
-      // It's a study plan URL
-      const match = url.match(/\/(?:studyplan|study-plan)\/([a-zA-Z0-9_-]+)/);
-      if (!match) return NextResponse.json({ error: 'Invalid study plan URL' }, { status: 400 });
-      const slug = match[1];
-      
-      const query = `
-        query studyPlanV2Detail($planSlug: String!) {
-          studyPlanV2Detail(planSlug: $planSlug) {
-            planSubGroups {
+      const pRes = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: LEETCODE_HEADERS,
+        body: JSON.stringify({
+          query: problemsetQuery,
+          variables: { categorySlug: "", skip: 0, limit: 150, filters: { listId: slug } }
+        })
+      });
+      const pData = await pRes.json();
+
+      if (pData.data?.problemsetQuestionList?.questions && pData.data.problemsetQuestionList.questions.length > 0) {
+        problemsToAdd = pData.data.problemsetQuestionList.questions.map((q: any) => ({
+          title: q.title,
+          titleSlug: q.titleSlug,
+          difficulty: q.difficulty.toUpperCase() as Difficulty,
+          tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
+        }));
+      } else {
+        // Fallback to favoriteQuestionList
+        const favQuery = `
+          query favoriteQuestionList($favoriteSlug: String!) {
+            favoriteQuestionList(favoriteSlug: $favoriteSlug) {
               questions {
                 title
                 titleSlug
@@ -109,46 +189,38 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
               }
             }
           }
-        }
-      `;
-      const res = await fetch('https://leetcode.com/graphql', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
-        body: JSON.stringify({ query, variables: { planSlug: slug } })
-      });
-      const data = await res.json();
-      
-      if (!data.data?.studyPlanV2Detail?.planSubGroups) {
-        return NextResponse.json({ error: 'Could not fetch problems from study plan. Make sure the plan exists.' }, { status: 400 });
-      }
+        `;
+        const fRes = await fetch('https://leetcode.com/graphql', {
+          method: 'POST',
+          headers: LEETCODE_HEADERS,
+          body: JSON.stringify({ query: favQuery, variables: { favoriteSlug: slug } })
+        });
+        const fData = await fRes.json();
 
-      data.data.studyPlanV2Detail.planSubGroups.forEach((group: any) => {
-        if (group.questions) {
-          group.questions.forEach((q: any) => {
-            problemsToAdd.push({
-              title: q.title,
-              titleSlug: q.titleSlug,
-              difficulty: q.difficulty.toUpperCase() as Difficulty,
-              tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
-            });
-          });
+        if (fData.data?.favoriteQuestionList?.questions && fData.data.favoriteQuestionList.questions.length > 0) {
+          problemsToAdd = fData.data.favoriteQuestionList.questions.map((q: any) => ({
+            title: q.title,
+            titleSlug: q.titleSlug,
+            difficulty: q.difficulty.toUpperCase() as Difficulty,
+            tags: q.topicTags ? q.topicTags.map((t: any) => t.name) : []
+          }));
         }
-      });
+      }
 
       if (problemsToAdd.length === 0) {
-        return NextResponse.json({ error: 'Study plan is empty or invalid.' }, { status: 400 });
+        return NextResponse.json({ error: 'Could not fetch problems from list. Make sure the list is public on LeetCode.' }, { status: 400 });
       }
     } else if (url.includes('/problems/')) {
-      // Find all problem slugs in the input text
+      // 4. Direct problem URLs
       const regex = /\/problems\/([a-zA-Z0-9_-]+)/g;
       const slugs = new Set<string>();
-      let match;
-      while ((match = regex.exec(url)) !== null) {
-        slugs.add(match[1]);
+      let m;
+      while ((m = regex.exec(url)) !== null) {
+        slugs.add(m[1]);
       }
 
       if (slugs.size === 0) {
-        return NextResponse.json({ error: 'No valid problem URLs found' }, { status: 400 });
+        return NextResponse.json({ error: 'No valid problem slugs found in input' }, { status: 400 });
       }
 
       const query = `
@@ -163,12 +235,11 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
         }
       `;
 
-      // Fetch all problems in parallel
       const fetchPromises = Array.from(slugs).map(async (slug) => {
         try {
           const res = await fetch('https://leetcode.com/graphql', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+            headers: LEETCODE_HEADERS,
             body: JSON.stringify({ query, variables: { titleSlug: slug } })
           });
           const data = await res.json();
@@ -190,60 +261,99 @@ export async function POST(req: Request, { params }: { params: { deckId: string 
       problemsToAdd = results.filter((p): p is NonNullable<typeof p> => p !== null);
 
       if (problemsToAdd.length === 0) {
-        return NextResponse.json({ error: 'Could not fetch any of the provided problems.' }, { status: 400 });
+        return NextResponse.json({ error: 'Could not fetch problem details from LeetCode.' }, { status: 400 });
       }
     } else {
-      return NextResponse.json({ error: 'Unsupported URL format. Please paste a LeetCode List URL or one/many Problem URLs.' }, { status: 400 });
+      return NextResponse.json({ error: 'Unsupported URL format. Please paste a LeetCode Study Plan, Problem List, or Problem URL.' }, { status: 400 });
     }
 
-    // Bulk Insert into Prisma
+    if (problemsToAdd.length === 0) {
+      return NextResponse.json({ error: 'No problems found to import.' }, { status: 400 });
+    }
+
+    // Initialize SM-2 parameters
     const now = new Date();
-    let initialInterval = 0;
+    let initialInterval = 1;
     let initialRepetitions = 0;
     let initialNextReviewDate = now;
 
     if (familiarity === 'studied') {
       initialInterval = 3;
       initialRepetitions = 1;
-      initialNextReviewDate = new Date();
-      initialNextReviewDate.setDate(initialNextReviewDate.getDate() + 3);
+      initialNextReviewDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     }
-    
-    // We cannot use prisma.problem.createMany because we want to connect to a deck.
-    // Actually, createMany doesn't support nested relations easily, so we can use a transaction.
-    const createdProblems = await prisma.$transaction(
-      problemsToAdd.map(p => 
-        prisma.problem.create({
+
+    let addedCount = 0;
+
+    for (const prob of problemsToAdd) {
+      const leetcodeUrl = `https://leetcode.com/problems/${prob.titleSlug}/`;
+
+      let problem = await prisma.problem.findFirst({
+        where: {
+          userId: user.id,
+          OR: [
+            { title: prob.title },
+            { leetcodeUrl }
+          ]
+        },
+        include: { decks: true }
+      });
+
+      if (!problem) {
+        const tagConnectOrCreate = (prob.tags || []).map(tagName => ({
+          where: { name: tagName.toLowerCase() },
+          create: { name: tagName.toLowerCase() }
+        }));
+
+        problem = await prisma.problem.create({
           data: {
-            title: p.title,
-            difficulty: p.difficulty,
-            leetcodeUrl: `https://leetcode.com/problems/${p.titleSlug}/`,
             userId: user.id,
-            tags: {
-              connectOrCreate: p.tags.map(tagName => ({
-                where: { name: tagName },
-                create: { name: tagName }
-              }))
-            },
+            title: prob.title,
+            difficulty: prob.difficulty,
+            leetcodeUrl,
             decks: {
               connect: { id: deckId }
             },
+            tags: {
+              connectOrCreate: tagConnectOrCreate
+            },
             reviewState: {
               create: {
-                nextReviewDate: initialNextReviewDate,
                 interval: initialInterval,
                 repetitions: initialRepetitions,
-                easeFactor: 2.5
+                easeFactor: 2.5,
+                nextReviewDate: initialNextReviewDate
               }
             }
-          }
-        })
-      )
-    );
+          },
+          include: { decks: true }
+        });
+        addedCount++;
+      } else {
+        const isConnected = problem.decks.some(d => d.id === deckId);
+        if (!isConnected) {
+          await prisma.problem.update({
+            where: { id: problem.id },
+            data: {
+              decks: {
+                connect: { id: deckId }
+              }
+            }
+          });
+          addedCount++;
+        }
+      }
+    }
 
-    return NextResponse.json({ message: `Imported ${createdProblems.length} problems successfully`, count: createdProblems.length });
-  } catch (error: any) {
-    Sentry.captureException(error);
-    return NextResponse.json({ error: 'Internal server error during import' }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      addedCount,
+      totalCount: problemsToAdd.length,
+      message: `Successfully imported ${addedCount} problems into "${deck.name}".`
+    });
+
+  } catch (error) {
+    console.error('Import error:', error);
+    return NextResponse.json({ error: 'Failed to process import.' }, { status: 500 });
   }
 }

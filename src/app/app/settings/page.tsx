@@ -9,22 +9,22 @@ import { useRouter } from 'next/navigation';
 export default function SettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [token, setToken] = useState('');
-  
+
   // Profile Form
   const [name, setName] = useState('');
   const [notifications, setNotifications] = useState(false);
   const [dailyNewLimit, setDailyNewLimit] = useState<number>(5);
   const [defaultLanguage, setDefaultLanguage] = useState<string>('javascript');
-  
+
   // Security Form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Danger Zone
   const [deleteEmail, setDeleteEmail] = useState('');
 
@@ -93,7 +93,7 @@ export default function SettingsPage() {
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, newPassword);
-      
+
       toast.success('Password updated successfully');
       setCurrentPassword('');
       setNewPassword('');
@@ -125,7 +125,7 @@ export default function SettingsPage() {
 
       // 2. Delete Firebase User
       await deleteUser(user);
-      
+
       toast.success('Account deleted successfully');
       router.push('/');
     } catch (e: any) {
@@ -147,51 +147,45 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header Bar */}
-      <div className="pb-6 border-b border-border font-mono">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-text">
-            [CONFIGURATION]
-          </span>
-        </div>
+      <div className="pb-6 border-b border-border">
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text">
-          Account &amp; Engine Settings
+          Account Settings
         </h1>
-        <p className="text-xs text-muted-text mt-0.5 font-sans">
-          Configure daily intake limits, default syntax languages, and security credentials.
+        <p className="text-xs text-muted-text mt-1">
+          Manage your daily practice limits, defaults, and account credentials.
         </p>
       </div>
 
       {/* Profile & Pacing Configuration */}
       <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-6">
         <div className="flex items-center justify-between pb-3 border-b border-border">
-          <h2 className="text-sm font-bold text-text uppercase font-mono tracking-wider">
-            [01] Profile &amp; Pacing Controls
+          <h2 className="text-sm font-bold text-text">
+            Profile &amp; Daily Limits
           </h2>
-          <span className="font-mono text-[10px] text-muted-text uppercase">SM-2 INTAKE</span>
         </div>
-        
+
         <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
                 Display Name
               </label>
-              <input 
-                type="text" 
-                value={name} 
+              <input
+                type="text"
+                value={name}
                 onChange={e => setName(e.target.value)}
                 className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary font-medium"
                 placeholder="Your name"
               />
             </div>
-            
+
             <div>
               <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
                 Registered Email
               </label>
-              <input 
-                type="email" 
-                value={user?.email || ''} 
+              <input
+                type="email"
+                value={user?.email || ''}
                 disabled
                 className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm text-muted-text cursor-not-allowed font-mono text-xs"
               />
@@ -205,11 +199,11 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-text mb-2 leading-relaxed">
               Reviews always take priority. After completing due items, up to this many new problems are introduced from your catalog. Set to <code className="bg-background px-1 py-0.5 rounded font-mono">0</code> to pause new questions while clearing review backlogs.
             </p>
-            <input 
-              type="number" 
+            <input
+              type="number"
               min={0}
               max={100}
-              value={dailyNewLimit} 
+              value={dailyNewLimit}
               onChange={e => {
                 const val = parseInt(e.target.value, 10);
                 setDailyNewLimit(isNaN(val) ? 0 : Math.max(0, Math.min(100, val)));
@@ -251,8 +245,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="pt-2 font-mono">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={saving}
               className="bg-text text-background px-5 py-2 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity uppercase tracking-wider shadow-sm"
             >
@@ -264,47 +258,46 @@ export default function SettingsPage() {
 
       {/* Security Credentials */}
       <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-border">
-          <h2 className="text-sm font-bold text-text uppercase font-mono tracking-wider">
-            [02] Security &amp; Credentials
+        <div className="pb-3 border-b border-border">
+          <h2 className="text-sm font-bold text-text">
+            Security &amp; Password
           </h2>
-          <span className="font-mono text-[10px] text-muted-text uppercase">PASSWORD RESET</span>
         </div>
 
         <form onSubmit={handleChangePassword} className="space-y-4 max-w-md text-xs">
           <div>
-            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text mb-1">
               Current Password
             </label>
             <input 
               type="password" 
-              required
+              required 
               value={currentPassword} 
               onChange={e => setCurrentPassword(e.target.value)}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
             />
           </div>
           <div>
-            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text mb-1">
               New Password (min 6 chars)
             </label>
             <input 
               type="password" 
               required 
-              minLength={6}
+              minLength={6} 
               value={newPassword} 
               onChange={e => setNewPassword(e.target.value)}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
             />
           </div>
           <div>
-            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-text mb-1">
               Confirm New Password
             </label>
             <input 
               type="password" 
               required 
-              minLength={6}
+              minLength={6} 
               value={confirmPassword} 
               onChange={e => setConfirmPassword(e.target.value)}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
@@ -314,7 +307,7 @@ export default function SettingsPage() {
           <button 
             type="submit" 
             disabled={saving}
-            className="bg-surface border border-border px-5 py-2 rounded-lg text-xs font-semibold text-text hover:bg-background transition-colors disabled:opacity-50 font-mono uppercase tracking-wider"
+            className="bg-surface border border-border px-5 py-2 rounded-lg text-xs font-semibold text-text hover:bg-background transition-colors disabled:opacity-50"
           >
             Update Password
           </button>
@@ -322,13 +315,13 @@ export default function SettingsPage() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-surface rounded-xl border border-rose-500/30 p-6 shadow-sm space-y-4 font-mono">
+      <section className="bg-surface rounded-xl border border-rose-500/30 p-6 shadow-sm space-y-4">
         <div className="pb-3 border-b border-rose-500/20">
-          <h2 className="text-sm font-bold text-rose-500 uppercase tracking-wider">
-            [03] Danger Zone
+          <h2 className="text-sm font-bold text-rose-500">
+            Danger Zone
           </h2>
         </div>
-        
+
         <p className="text-xs text-muted-text leading-relaxed font-sans">
           Deleting your account permanently purges all custom decks, problem notes, and SM-2 review history. This action cannot be undone.
         </p>
@@ -338,16 +331,16 @@ export default function SettingsPage() {
             <label className="block text-xs font-semibold text-muted-text mb-1">
               Type <span className="text-text font-bold bg-background px-1 py-0.5 rounded border border-border">{user?.email}</span> to confirm
             </label>
-            <input 
-              type="text" 
-              value={deleteEmail} 
+            <input
+              type="text"
+              value={deleteEmail}
               onChange={e => setDeleteEmail(e.target.value)}
               className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-text focus:outline-none focus:border-rose-500"
               placeholder={user?.email || ''}
             />
           </div>
 
-          <button 
+          <button
             onClick={handleDeleteAccount}
             disabled={deleteEmail !== user?.email}
             className="w-full bg-rose-600 text-white px-5 py-2.5 rounded-lg text-xs uppercase font-bold hover:bg-rose-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"

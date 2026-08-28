@@ -66,7 +66,7 @@ export default function Login() {
             {isForgotPassword ? 'Enter your registered email to receive a password reset link' : 'Access your daily review queue and practice decks'}
           </p>
         </div>
-        
+
         {error && (
           <div className="bg-danger/10 text-danger p-3 rounded-lg mb-6 text-xs border border-danger/30">
             <span>[ERROR] {error}</span>
@@ -93,15 +93,15 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          
+
           {!isForgotPassword && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-xs font-semibold text-text uppercase tracking-wider">
                   Password
                 </label>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => { setIsForgotPassword(true); setError(''); setMessage(''); }}
                   className="text-xs text-primary hover:underline font-medium uppercase text-[11px]"
                 >
@@ -124,16 +124,16 @@ export default function Login() {
             disabled={isSubmitting}
             className="w-full bg-text text-background py-2.5 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 uppercase tracking-wider mt-2 shadow-sm"
           >
-            {isSubmitting 
-              ? (isForgotPassword ? '[ SENDING LINK... ]' : '[ AUTHENTICATING... ]') 
+            {isSubmitting
+              ? (isForgotPassword ? '[ SENDING LINK... ]' : '[ AUTHENTICATING... ]')
               : (isForgotPassword ? 'Send Reset Link ->' : 'Sign In ->')}
           </button>
         </form>
 
         {isForgotPassword ? (
           <div className="mt-6 text-center">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => { setIsForgotPassword(false); setError(''); setMessage(''); }}
               className="text-xs text-muted-text hover:text-text transition-colors uppercase"
             >

@@ -67,7 +67,7 @@ export default function OnboardingModal() {
   return (
     <div className="fixed inset-0 z-[100] flex justify-center items-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-surface border border-border shadow-2xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 font-mono">
-        
+
         {/* Step Progress Bar */}
         <div className="flex h-1 w-full bg-background">
           <div className="bg-primary transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }}></div>

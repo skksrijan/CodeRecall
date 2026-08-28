@@ -111,19 +111,11 @@ export default function StatsDashboard() {
       
       {/* Header Bar */}
       <div className="pb-6 border-b border-border">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-primary px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
-            [RETENTION TELEMETRY]
-          </span>
-          <span className="font-mono text-xs text-muted-text">
-            • 90-Day Analytics
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text font-mono">
-          Retention &amp; Load Dashboard
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text">
+          Analytics &amp; Retention
         </h1>
-        <p className="text-xs text-muted-text mt-0.5">
-          Quantify recall efficiency, upcoming spaced review workloads, and pattern retention.
+        <p className="text-xs text-muted-text mt-1">
+          Track recall efficiency, consistency streaks, and upcoming review workloads.
         </p>
       </div>
 

@@ -47,7 +47,7 @@ export default function SignUp() {
             Start retaining coding patterns with spaced repetition
           </p>
         </div>
-        
+
         {error && (
           <div className="bg-danger/10 text-danger p-3 rounded-lg mb-6 text-xs border border-danger/30">
             <span>[ERROR] {error}</span>

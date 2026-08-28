@@ -59,9 +59,6 @@ export default function Navigation() {
               <span className="text-lg font-bold tracking-tight text-text font-mono">
                 CodeRecall
               </span>
-              <span className="font-mono text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                SM-2
-              </span>
             </Link>
             <div className="hidden md:flex space-x-1 font-mono text-xs">
               {links.map((link) => {
@@ -70,19 +67,17 @@ export default function Navigation() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-2 ${
-                      isActive
+                    className={`px-3 py-1.5 rounded-md text-xs transition-colors flex items-center gap-2 ${isActive
                         ? 'bg-text text-background font-semibold shadow-sm'
                         : 'text-muted-text hover:text-text hover:bg-background'
-                    }`}
+                      }`}
                   >
                     <span>{link.label}</span>
                     {link.href === '/app/study' && dueCount !== null && dueCount > 0 && (
-                      <span className={`tabular-nums text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                        isActive
+                      <span className={`tabular-nums text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${isActive
                           ? 'bg-background text-text'
                           : 'bg-warning text-black font-extrabold'
-                      }`}>
+                        }`}>
                         [{dueCount}]
                       </span>
                     )}
@@ -113,9 +108,9 @@ export default function Navigation() {
                 </button>
               </>
             )}
-            
+
             <div className="flex items-center space-x-3 border-l border-border pl-3 font-mono text-xs">
-              <Link 
+              <Link
                 href="/app/settings"
                 className="px-2 py-1 rounded-md text-muted-text hover:text-text hover:bg-background border border-transparent hover:border-border transition-colors uppercase tracking-wider text-[11px]"
                 aria-label="Settings"
