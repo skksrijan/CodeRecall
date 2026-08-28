@@ -15,10 +15,27 @@ export async function verifyAuth(req: Request) {
     // Verify token
     const decodedToken = await adminAuth.verifyIdToken(token);
     
-    // Find user in Prisma
-    const user = await prisma.user.findUnique({
+    // Find or auto-provision user in Prisma
+    let user = await prisma.user.findUnique({
       where: { email: decodedToken.email },
     });
+
+    if (!user && decodedToken.email) {
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: decodedToken.email,
+            name: (decodedToken as any).name || null,
+          }
+        });
+        logger.info({ email: decodedToken.email }, 'Auto-provisioned Prisma user record');
+      } catch (createErr) {
+        // If race condition where another request created it, try finding it again
+        user = await prisma.user.findUnique({
+          where: { email: decodedToken.email },
+        });
+      }
+    }
 
     if (!user) {
       logger.warn({ email: decodedToken.email }, 'User token valid but not found in Prisma database');

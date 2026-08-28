@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { updatePassword, updateProfile, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import { Save, Lock, Trash2, Bell, ShieldAlert, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -73,9 +72,9 @@ export default function SettingsPage() {
         await updateProfile(user, { displayName: name });
       }
 
-      toast.success('Profile updated successfully');
+      toast.success('Configuration saved');
     } catch (e) {
-      toast.error('Failed to update profile');
+      toast.error('Failed to save configuration');
     } finally {
       setSaving(false);
     }
@@ -91,11 +90,8 @@ export default function SettingsPage() {
 
     setSaving(true);
     try {
-      // Re-authenticate first
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
-      
-      // Update password
       await updatePassword(user, newPassword);
       
       toast.success('Password updated successfully');
@@ -113,7 +109,6 @@ export default function SettingsPage() {
     if (!user || deleteEmail !== user.email) return;
 
     try {
-      // Prompt for password to re-authenticate
       const pass = window.prompt("Please enter your password to confirm account deletion:");
       if (!pass) return;
 
@@ -141,53 +136,74 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto space-y-8 animate-pulse">
-        <div className="h-8 w-48 bg-surface rounded"></div>
-        <div className="h-64 w-full bg-surface rounded-xl"></div>
-        <div className="h-64 w-full bg-surface rounded-xl"></div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-mono">
+        <div className="h-8 w-48 bg-surface rounded animate-pulse" />
+        <div className="h-64 bg-surface rounded-xl border border-border animate-pulse" />
+        <div className="h-64 bg-surface rounded-xl border border-border animate-pulse" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-8 mb-20">
-      <h1 className="text-3xl font-bold text-text">Settings</h1>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Header Bar */}
+      <div className="pb-6 border-b border-border font-mono">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-text">
+            [CONFIGURATION]
+          </span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text">
+          Account &amp; Engine Settings
+        </h1>
+        <p className="text-xs text-muted-text mt-0.5 font-sans">
+          Configure daily intake limits, default syntax languages, and security credentials.
+        </p>
+      </div>
 
-      {/* Profile Settings */}
-      <section className="bg-surface rounded-2xl p-6 md:p-8 shadow-xl shadow-black/5 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-primary/10 rounded-lg text-primary">
-            <Save className="w-5 h-5" />
-          </div>
-          <h2 className="text-xl font-bold">Profile</h2>
+      {/* Profile & Pacing Configuration */}
+      <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-6">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
+          <h2 className="text-sm font-bold text-text uppercase font-mono tracking-wider">
+            [01] Profile &amp; Pacing Controls
+          </h2>
+          <span className="font-mono text-[10px] text-muted-text uppercase">SM-2 INTAKE</span>
         </div>
         
-        <form onSubmit={handleSaveProfile} className="space-y-6">
-          <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Display Name</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-              placeholder="How should we call you?"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Email</label>
-            <input 
-              type="email" 
-              value={user?.email || ''} 
-              disabled
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-muted-text opacity-70 cursor-not-allowed"
-            />
+        <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                Display Name
+              </label>
+              <input 
+                type="text" 
+                value={name} 
+                onChange={e => setName(e.target.value)}
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary font-medium"
+                placeholder="Your name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                Registered Email
+              </label>
+              <input 
+                type="email" 
+                value={user?.email || ''} 
+                disabled
+                className="w-full bg-background/50 border border-border rounded-lg px-3 py-2 text-sm text-muted-text cursor-not-allowed font-mono text-xs"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Daily New Problems Limit</label>
-            <p className="text-xs text-muted-text mb-2">
-              Each day, you&apos;ll first review all problems that are due, then receive up to this many NEW problems from your imported decks. Set to 0 to pause learning new problems while catching up on reviews.
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Daily New Question Limit
+            </label>
+            <p className="text-xs text-muted-text mb-2 leading-relaxed">
+              Reviews always take priority. After completing due items, up to this many new problems are introduced from your catalog. Set to <code className="bg-background px-1 py-0.5 rounded font-mono">0</code> to pause new questions while clearing review backlogs.
             </p>
             <input 
               type="number" 
@@ -198,17 +214,19 @@ export default function SettingsPage() {
                 const val = parseInt(e.target.value, 10);
                 setDailyNewLimit(isNaN(val) ? 0 : Math.max(0, Math.min(100, val)));
               }}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-32 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono text-text focus:outline-none focus:border-primary tabular-nums"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Default Code Language</label>
-            <p className="text-xs text-muted-text mb-2">Your preferred programming language for the study scratchpad.</p>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Default Code Language
+            </label>
+            <p className="text-xs text-muted-text mb-2">Preferred programming syntax in the study scratchpad.</p>
             <select
               value={defaultLanguage}
               onChange={e => setDefaultLanguage(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none"
+              className="w-full sm:w-64 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono text-text focus:outline-none focus:border-primary"
             >
               <option value="javascript">JavaScript</option>
               <option value="typescript">TypeScript</option>
@@ -221,78 +239,82 @@ export default function SettingsPage() {
             </select>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl">
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-muted-text" />
-              <div>
-                <p className="font-semibold text-sm">Daily Reminders</p>
-                <p className="text-xs text-muted-text">Receive an email when you have cards due for review.</p>
-              </div>
+          <div className="flex items-center justify-between p-3.5 bg-background border border-border rounded-lg">
+            <div>
+              <p className="font-semibold text-xs text-text font-mono">[ DAILY REVIEW REMINDERS ]</p>
+              <p className="text-[11px] text-muted-text">Send email notification when spaced reviews are due.</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" className="sr-only peer" checked={notifications} onChange={(e) => setNotifications(e.target.checked)} />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-9 h-5 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
             </label>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={saving}
-            className="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Save Changes
-          </button>
+          <div className="pt-2 font-mono">
+            <button 
+              type="submit" 
+              disabled={saving}
+              className="bg-text text-background px-5 py-2 rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity uppercase tracking-wider shadow-sm"
+            >
+              {saving ? '[ SAVING... ]' : 'Save Configuration'}
+            </button>
+          </div>
         </form>
       </section>
 
-      {/* Security Settings */}
-      <section className="bg-surface rounded-2xl p-6 md:p-8 shadow-xl shadow-black/5 border border-border">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-warning/10 rounded-lg text-warning">
-            <Lock className="w-5 h-5" />
-          </div>
-          <h2 className="text-xl font-bold">Security</h2>
+      {/* Security Credentials */}
+      <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
+          <h2 className="text-sm font-bold text-text uppercase font-mono tracking-wider">
+            [02] Security &amp; Credentials
+          </h2>
+          <span className="font-mono text-[10px] text-muted-text uppercase">PASSWORD RESET</span>
         </div>
 
-        <form onSubmit={handleChangePassword} className="space-y-4">
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-md text-xs">
           <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Current Password</label>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Current Password
+            </label>
             <input 
               type="password" 
               required
               value={currentPassword} 
               onChange={e => setCurrentPassword(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">New Password</label>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              New Password (min 6 chars)
+            </label>
             <input 
-              type="password"
+              type="password" 
               required 
               minLength={6}
               value={newPassword} 
               onChange={e => setNewPassword(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-muted-text mb-2">Confirm New Password</label>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Confirm New Password
+            </label>
             <input 
               type="password" 
-              required
+              required 
               minLength={6}
               value={confirmPassword} 
               onChange={e => setConfirmPassword(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
             />
           </div>
 
           <button 
             type="submit" 
             disabled={saving}
-            className="bg-background text-text border border-border px-6 py-2.5 rounded-lg font-semibold hover:bg-surface transition disabled:opacity-50 mt-2"
+            className="bg-surface border border-border px-5 py-2 rounded-lg text-xs font-semibold text-text hover:bg-background transition-colors disabled:opacity-50 font-mono uppercase tracking-wider"
           >
             Update Password
           </button>
@@ -300,47 +322,40 @@ export default function SettingsPage() {
       </section>
 
       {/* Danger Zone */}
-      <section className="bg-surface rounded-2xl p-6 md:p-8 shadow-xl shadow-black/5 border border-danger/50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-danger/5 rounded-bl-full -z-0"></div>
+      <section className="bg-surface rounded-xl border border-rose-500/30 p-6 shadow-sm space-y-4 font-mono">
+        <div className="pb-3 border-b border-rose-500/20">
+          <h2 className="text-sm font-bold text-rose-500 uppercase tracking-wider">
+            [03] Danger Zone
+          </h2>
+        </div>
         
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-danger/10 rounded-lg text-danger">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-danger">Danger Zone</h2>
-          </div>
-          
-          <p className="text-sm text-muted-text mb-6 max-w-xl">
-            Once you delete your account, there is no going back. Please be certain. 
-            All of your decks, problems, and review history will be permanently wiped.
-          </p>
+        <p className="text-xs text-muted-text leading-relaxed font-sans">
+          Deleting your account permanently purges all custom decks, problem notes, and SM-2 review history. This action cannot be undone.
+        </p>
 
-          <div className="space-y-4 max-w-md">
-            <div>
-              <label className="block text-sm font-semibold text-muted-text mb-2">
-                Type <span className="text-text font-bold font-mono bg-background px-1 rounded">{user?.email}</span> to confirm
-              </label>
-              <input 
-                type="text" 
-                value={deleteEmail} 
-                onChange={e => setDeleteEmail(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-text focus:outline-none focus:border-danger focus:ring-1 focus:ring-danger transition-all"
-                placeholder={user?.email || ''}
-              />
-            </div>
-
-            <button 
-              onClick={handleDeleteAccount}
-              disabled={deleteEmail !== user?.email}
-              className="w-full bg-danger text-white px-6 py-3 rounded-xl font-bold hover:bg-danger/90 transition shadow-lg shadow-danger/25 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Permanently Delete Account
-            </button>
+        <div className="space-y-3 max-w-md">
+          <div>
+            <label className="block text-xs font-semibold text-muted-text mb-1">
+              Type <span className="text-text font-bold bg-background px-1 py-0.5 rounded border border-border">{user?.email}</span> to confirm
+            </label>
+            <input 
+              type="text" 
+              value={deleteEmail} 
+              onChange={e => setDeleteEmail(e.target.value)}
+              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs text-text focus:outline-none focus:border-rose-500"
+              placeholder={user?.email || ''}
+            />
           </div>
+
+          <button 
+            onClick={handleDeleteAccount}
+            disabled={deleteEmail !== user?.email}
+            className="w-full bg-rose-600 text-white px-5 py-2.5 rounded-lg text-xs uppercase font-bold hover:bg-rose-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+          >
+            Permanently Wipe Account &amp; Catalog
+          </button>
         </div>
       </section>
-
     </div>
   );
 }

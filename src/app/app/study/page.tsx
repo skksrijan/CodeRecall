@@ -5,13 +5,14 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import dynamic from 'next/dynamic';
+import { useAuth } from '@/context/AuthContext';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const MonacoEditor = dynamic(
   () => import('@monaco-editor/react').then(mod => ({ default: mod.Editor })),
-  { ssr: false, loading: () => <div className="w-full h-full bg-[#1e1e1e] flex items-center justify-center text-[#d4d4d4]/50 text-sm">Loading editor...</div> }
+  { ssr: false, loading: () => <div className="w-full h-full bg-[#0D1117] flex items-center justify-center text-muted-text font-mono text-xs">Loading editor environment...</div> }
 );
-import { useAuth } from '@/context/AuthContext';
-import { useSearchParams, useRouter } from 'next/navigation';
+
 interface ReviewState {
   id: string;
   nextReviewDate: string;
@@ -38,26 +39,11 @@ interface Problem {
   _cardType?: 'new' | 'review';
 }
 
-const QUALITY_SCORES = [
-  { value: 0, label: 'Blackout', description: 'Complete memory failure', color: 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border-red-500/50', key: '0' },
-  { value: 1, label: 'Wrong, familiar', description: 'Incorrect, but remembered seeing it', color: 'bg-orange-500/20 text-orange-500 hover:bg-orange-500/30 border-orange-500/50', key: '1' },
-  { value: 2, label: 'Wrong, easy recall', description: 'Easily remembered upon seeing answer', color: 'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30 border-yellow-500/50', key: '2' },
-  { value: 3, label: 'Hard', description: 'Correct, but took significant effort', color: 'bg-green-600/20 text-green-500 hover:bg-green-600/30 border-green-600/50', key: '3' },
-  { value: 4, label: 'Good', description: 'Correct, after some hesitation', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '4' },
-  { value: 5, label: 'Easy', description: 'Correct and effortless', color: 'bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 border-cyan-500/50', key: '5' },
-];
-
-const NEW_CARD_SCORES = [
-  { value: 0, label: 'Never seen this', description: 'Learn from scratch (Interval: 1 day)', color: 'bg-red-500/20 text-red-500 hover:bg-red-500/30 border-red-500/50', key: '1' },
-  { value: 3, label: 'Seen but rusty', description: 'Need practice soon (Interval: 1 day)', color: 'bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border-amber-500/50', key: '2' },
-  { value: 5, label: 'Know it well', description: 'Fast-track to longer interval (4+ days)', color: 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30 border-emerald-500/50', key: '3' },
-];
-
 type TabType = 'description' | 'solution' | 'notes';
 
 export default function StudyPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+    <Suspense fallback={<div className="p-8 text-center font-mono text-xs text-muted-text">Loading workbench environment...</div>}>
       <StudyContent />
     </Suspense>
   );
@@ -68,6 +54,7 @@ function StudyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const manualProblemId = searchParams.get('problemId');
+  const deckIdParam = searchParams.get('deckId');
 
   const [queue, setQueue] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +64,7 @@ function StudyContent() {
   const [sessionStats, setSessionStats] = useState({ newCount: 0, reviewCount: 0 });
   const [showFullScaleForNew, setShowFullScaleForNew] = useState(false);
 
-  // New features state
+  // Card Content & Scratchpad State
   const [description, setDescription] = useState<string | null>(null);
   const [loadingDesc, setLoadingDesc] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -94,27 +81,26 @@ function StudyContent() {
     if (user) {
       user.getIdToken().then((t) => fetchQueue(t));
     }
-  }, [user, manualProblemId]);
+  }, [user, manualProblemId, deckIdParam]);
 
   const fetchQueue = async (token: string) => {
     setLoading(true);
     try {
       if (manualProblemId) {
-        // Fetch specific problem for manual review
         const res = await fetch(`/api/problems?id=${manualProblemId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch problem');
         const data = await res.json();
-        // The API returns an array, filter it if needed, or assume it's one item
         const problem = data.find((p: any) => p.id === manualProblemId) || data[0];
         if (problem) {
           setQueue([problem]);
           setOriginalCount(1);
         }
       } else {
+        const url = deckIdParam ? `/api/reviews/queue?deckId=${deckIdParam}` : '/api/reviews/queue';
         const [queueRes, settingsRes] = await Promise.all([
-          fetch('/api/reviews/queue', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(url, { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/user/settings', { headers: { Authorization: `Bearer ${token}` } })
         ]);
         if (!queueRes.ok) throw new Error('Failed to fetch queue');
@@ -138,35 +124,44 @@ function StudyContent() {
   const handleGrade = async (quality: number) => {
     if (queue.length === 0 || !user) return;
     const currentProblem = queue[0];
-    const isNew = currentProblem._cardType === 'new' || currentProblem.reviewState?.repetitions === 0;
-    
     setIsSubmitting(true);
+
     try {
       const token = await user.getIdToken();
       const res = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ problemId: currentProblem.id, quality })
+        body: JSON.stringify({
+          problemId: currentProblem.id,
+          quality,
+        })
       });
-      
+
       if (!res.ok) throw new Error('Failed to submit review');
-      
+
+      const isNew = currentProblem._cardType === 'new' || currentProblem.reviewState?.repetitions === 0;
       setSessionStats(prev => ({
-        newCount: isNew ? prev.newCount + 1 : prev.newCount,
-        reviewCount: !isNew ? prev.reviewCount + 1 : prev.reviewCount,
+        newCount: prev.newCount + (isNew ? 1 : 0),
+        reviewCount: prev.reviewCount + (!isNew ? 1 : 0)
       }));
+
+      // Broadcast review completion to live nav badges
+      window.dispatchEvent(new CustomEvent('reviewCompleted'));
 
       if (manualProblemId) {
         setShowKeepStudying(true);
-      } else {
-        setQueue(prev => prev.slice(1));
-        setIsRevealed(false);
-        setShowFullScaleForNew(false);
+        setQueue([]);
+        return;
       }
-      window.dispatchEvent(new Event('reviewCompleted'));
+
+      setQueue((prev) => prev.slice(1));
+      setIsRevealed(false);
+      setDescription(null);
+      setElapsedSeconds(0);
+      setActiveTab('description');
     } catch {
       toast.error('Failed to submit review');
     } finally {
@@ -174,78 +169,79 @@ function StudyContent() {
     }
   };
 
+  const loadDescription = useCallback(async () => {
+    if (queue.length === 0 || !user) return;
+    const currentProblem = queue[0];
+    setLoadingDesc(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/problems/${currentProblem.id}/description`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDescription(data.description);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingDesc(false);
+    }
+  }, [queue, user]);
+
+  useEffect(() => {
+    if (queue.length > 0) {
+      loadDescription();
+      const current = queue[0];
+      setCurrentLanguage(current.language || globalDefaultLanguage || 'javascript');
+      setScratchpadCode(`// Scratchpad for: ${current.title}\n// Write notes or test code here:\n\n`);
+    }
+  }, [queue.length, loadDescription, globalDefaultLanguage]);
+
+  // Stopwatch timer
+  useEffect(() => {
+    if (queue.length === 0) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [queue.length]);
+
   const revealAnswer = () => {
     setIsRevealed(true);
     setActiveTab('solution');
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
   };
 
-  // Stopwatch effect
-  useEffect(() => {
-    if (!loading && queue.length > 0 && !isRevealed) {
-      const interval = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
-      return () => clearInterval(interval);
-    }
-  }, [loading, queue, isRevealed]);
-
-  const loadDescription = () => {
-    if (queue.length === 0 || !user) return;
-    setLoadingDesc(true);
-    const problemId = queue[0].id;
-    user.getIdToken().then(token => {
-      fetch(`/api/problems/${problemId}/description`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.description && data.description !== 'No description available.') {
-          setDescription(data.description);
-        } else {
-          setDescription(null); // Treat 'No description available' as a failure state to allow retrying
-        }
-      })
-      .catch(() => setDescription(null))
-      .finally(() => setLoadingDesc(false));
-    });
-  };
-
-  // Reset state on new card & fetch description
-  useEffect(() => {
-    if (queue.length > 0 && user) {
-      setElapsedSeconds(0);
-      setDescription(null);
-      setActiveTab('description');
-      setScratchpadCode('');
-      setIsAddingSolution(false);
-      setNewSolutionCode('');
-      setCurrentLanguage(queue[0].language || globalDefaultLanguage);
-      loadDescription();
-    }
-  }, [queue.length > 0 ? queue[0].id : null, user, globalDefaultLanguage]);
-
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts: Ctrl+' to reveal, 0-5 or 1-3 to grade
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isInputFocused = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
+      if (
+        e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement)?.classList.contains('inputarea')
+      ) {
+        return;
+      }
 
-      if (!isRevealed && e.ctrlKey && e.key === "'") {
+      if (e.ctrlKey && e.key === "'") {
         e.preventDefault();
         revealAnswer();
-      } else if (isRevealed && !isSubmitting && !isInputFocused) {
-        const isNew = queue[0]?._cardType === 'new' || queue[0]?.reviewState?.repetitions === 0;
-        if (isNew && !showFullScaleForNew) {
-          if (e.key === '1') { e.preventDefault(); handleGrade(0); }
-          else if (e.key === '2') { e.preventDefault(); handleGrade(3); }
-          else if (e.key === '3') { e.preventDefault(); handleGrade(5); }
+        return;
+      }
+
+      if (isRevealed && !isSubmitting && queue.length > 0) {
+        const currentProblem = queue[0];
+        const isNewCard = currentProblem._cardType === 'new' || currentProblem.reviewState?.repetitions === 0;
+
+        if (isNewCard && !showFullScaleForNew) {
+          if (e.key === '1') handleGrade(0);
+          if (e.key === '2') handleGrade(3);
+          if (e.key === '3') handleGrade(5);
         } else {
-          if (e.key === '0') { e.preventDefault(); handleGrade(0); }
-          else if (e.key === '1') { e.preventDefault(); handleGrade(1); }
-          else if (e.key === '2') { e.preventDefault(); handleGrade(2); }
-          else if (e.key === '3') { e.preventDefault(); handleGrade(3); }
-          else if (e.key === '4') { e.preventDefault(); handleGrade(4); }
-          else if (e.key === '5') { e.preventDefault(); handleGrade(5); }
+          const num = parseInt(e.key);
+          if (!isNaN(num) && num >= 0 && num <= 5) {
+            handleGrade(num);
+          }
         }
       }
     };
@@ -259,48 +255,79 @@ function StudyContent() {
     return `${m}:${s}`;
   };
 
+  // Mathematical Interval Predictor Computation (SM-2 Formulation)
+  const computePredictedInterval = (quality: number, currentProb: Problem) => {
+    const reps = currentProb.reviewState?.repetitions || 0;
+    const prevInterval = currentProb.reviewState?.interval || 1;
+    const ef = currentProb.reviewState?.easeFactor || 2.5;
+
+    if (quality < 3) {
+      return '1d';
+    }
+    if (reps === 0) {
+      return quality === 5 ? '4d' : '1d';
+    }
+    if (reps === 1) {
+      return quality === 5 ? '10d' : '6d';
+    }
+    const nextInterval = Math.round(prevInterval * (ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))));
+    return `${Math.max(nextInterval, prevInterval + 1)}d`;
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center p-12">
-        <div className="animate-pulse flex items-center space-x-2 text-muted-text">
-          <svg className="w-5 h-5 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span>Loading study queue...</span>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[65vh] p-8 text-center space-y-3 font-mono">
+        <div className="text-xs text-primary font-bold animate-pulse">[ INITIALIZING DRILL WORKBENCH... ]</div>
+        <span className="text-[11px] text-muted-text">Loading SM-2 interval queue from database</span>
       </div>
     );
   }
 
+  // Session Completed State
   if (queue.length === 0) {
     const totalDone = sessionStats.reviewCount + sessionStats.newCount;
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6 animate-in fade-in duration-500">
-        <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center text-success mb-4 border border-success/20 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
-          <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center space-y-6 animate-in fade-in duration-300 font-mono">
+        <div className="p-4 bg-success/10 rounded-xl text-success border border-success/30 font-bold text-sm">
+          [ ✓ DAILY DRILL SESSION COMPLETE ]
         </div>
-        <h1 className="text-3xl font-bold">All caught up!</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-extrabold text-text font-sans">All Queued Cards Completed!</h1>
+        </div>
+
         {totalDone > 0 ? (
-          <div className="bg-surface border border-border p-5 rounded-2xl max-w-md w-full shadow-sm text-sm space-y-2">
-            <p className="font-semibold text-text text-base">Great work today! 🎉</p>
-            <p className="text-muted-text">
-              You reviewed <span className="text-emerald-500 font-bold">{sessionStats.reviewCount}</span> problem{sessionStats.reviewCount !== 1 ? 's' : ''} and learned <span className="text-primary font-bold">{sessionStats.newCount}</span> new one{sessionStats.newCount !== 1 ? 's' : ''}.
-            </p>
+          <div className="bg-surface border border-border p-6 rounded-xl max-w-md w-full shadow-sm text-xs space-y-3">
+            <div className="flex justify-between items-center pb-2 border-b border-border">
+              <span className="text-muted-text">Cards Processed:</span>
+              <span className="font-bold text-text tabular-nums">{totalDone} Total</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-text">Spaced Reviews:</span>
+              <span className="font-bold text-emerald-500 tabular-nums">{sessionStats.reviewCount}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-text">New Intake Cards:</span>
+              <span className="font-bold text-primary tabular-nums">{sessionStats.newCount}</span>
+            </div>
           </div>
         ) : (
-          <p className="text-muted-text max-w-md">
-            No problems due for review right now. Take a break or add some new problems to your decks.
+          <p className="text-xs text-muted-text max-w-md">
+            Zero pending cards due in this queue. Take a breather or explore other practice decks.
           </p>
         )}
-        <div className="flex gap-4">
-          <Link href="/app/dashboard" className="bg-surface border border-border px-6 py-3 rounded-xl font-semibold hover:bg-background transition">
-            Dashboard
+
+        <div className="flex gap-3 pt-2 text-xs uppercase tracking-wider font-semibold">
+          <Link
+            href="/app/dashboard"
+            className="bg-surface border border-border px-5 py-2.5 rounded-lg hover:bg-background transition-colors text-text shadow-sm"
+          >
+            [ Dashboard ]
           </Link>
-          <Link href="/app/decks" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0">
-            Browse Decks
+          <Link
+            href="/app/decks"
+            className="bg-text text-background px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity shadow-sm"
+          >
+            Explore Decks -&gt;
           </Link>
         </div>
       </div>
@@ -309,31 +336,31 @@ function StudyContent() {
 
   if (showKeepStudying) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
-        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 border border-primary/20 shadow-[0_0_30px_rgba(var(--primary-rgb),0.2)]">
-          <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center space-y-5 animate-in zoom-in-95 duration-200 font-mono">
+        <div className="p-3 bg-primary/10 rounded-xl text-primary border border-primary/20 font-bold text-xs">
+          [ ✓ RECALL CALIBRATED ]
         </div>
-        <h1 className="text-3xl font-bold">Review Complete!</h1>
-        <p className="text-muted-text max-w-md text-lg">
-          Keep studying your daily queue?
-        </p>
-        <div className="flex gap-4 mt-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-text font-sans">Problem Calibrated</h1>
+          <p className="text-xs text-muted-text max-w-sm font-sans">
+            Continue studying the remainder of your daily review queue?
+          </p>
+        </div>
+        <div className="flex gap-3 mt-4 text-xs font-semibold uppercase tracking-wider">
           <button 
             onClick={() => router.back()}
-            className="bg-surface border border-border text-text px-8 py-3 rounded-xl font-semibold hover:bg-background transition"
+            className="bg-surface border border-border text-text px-5 py-2.5 rounded-lg hover:bg-background transition-colors"
           >
-            No, go back
+            [ Return to Deck ]
           </button>
           <button 
             onClick={() => {
               setShowKeepStudying(false);
               router.replace('/app/study');
             }}
-            className="bg-primary text-white px-8 py-3 rounded-xl font-semibold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+            className="bg-text text-background px-6 py-2.5 rounded-lg hover:opacity-90 transition-opacity shadow-sm"
           >
-            Yes, let&apos;s go
+            Continue Queue -&gt;
           </button>
         </div>
       </div>
@@ -344,142 +371,186 @@ function StudyContent() {
   const currentIndex = originalCount - queue.length + 1;
   const isNewCard = currentCard._cardType === 'new' || currentCard.reviewState?.repetitions === 0;
   
-  // Dynamic timer based on difficulty
+  // Difficulty Timer Threshold
   const getWarningThreshold = (difficulty: string) => {
     switch (difficulty) {
-      case 'EASY': return 5 * 60; // 5 mins
-      case 'MEDIUM': return 15 * 60; // 15 mins
-      case 'HARD': return 30 * 60; // 30 mins
+      case 'EASY': return 5 * 60;
+      case 'MEDIUM': return 15 * 60;
+      case 'HARD': return 30 * 60;
       default: return 10 * 60;
     }
   };
   const isTimerWarning = elapsedSeconds > getWarningThreshold(currentCard.difficulty);
 
   const getSuggestedGrade = (difficulty: string, timeSeconds: number) => {
-    const easyTarget = 2 * 60; // 2 mins
-    const medTarget = 10 * 60; // 10 mins
-    const hardTarget = 20 * 60; // 20 mins
+    const easyTarget = 2 * 60;
+    const medTarget = 10 * 60;
+    const hardTarget = 20 * 60;
 
     let target = easyTarget;
     if (difficulty === 'MEDIUM') target = medTarget;
     if (difficulty === 'HARD') target = hardTarget;
 
-    if (timeSeconds <= target) return 5; // Easy
-    if (timeSeconds <= target * 2) return 4; // Good
-    if (timeSeconds <= target * 3) return 3; // Hard
-    return 2; // Took too long, suggest struggling option
+    if (timeSeconds <= target) return 5;
+    if (timeSeconds <= target * 2) return 4;
+    if (timeSeconds <= target * 3) return 3;
+    return 2;
   };
   
   const suggestedGrade = getSuggestedGrade(currentCard.difficulty, elapsedSeconds);
 
+  // Quality score configurations with calculated live predicted intervals
+  const QUALITY_SCORES = [
+    { value: 0, label: 'Blackout', description: 'Zero recall', color: 'border-danger/30 text-danger bg-danger/10 hover:bg-danger/20', key: '0' },
+    { value: 1, label: 'Failed', description: 'Incorrect pattern', color: 'border-danger/30 text-danger bg-danger/10 hover:bg-danger/20', key: '1' },
+    { value: 2, label: 'Lapsed', description: 'Struggled recall', color: 'border-warning/30 text-warning bg-warning/10 hover:bg-warning/20', key: '2' },
+    { value: 3, label: 'Hard', description: 'Effortful recall', color: 'border-warning/30 text-warning bg-warning/10 hover:bg-warning/20', key: '3' },
+    { value: 4, label: 'Good', description: 'Solid recall', color: 'border-success/30 text-success bg-success/10 hover:bg-success/20', key: '4' },
+    { value: 5, label: 'Perfect', description: 'Instant reflex', color: 'border-success/30 text-success bg-success/10 hover:bg-success/20', key: '5' },
+  ];
+
+  const NEW_CARD_SCORES = [
+    { value: 0, label: 'Brand New', description: 'Learn from scratch (Interval: 1d)', color: 'border-danger/30 text-danger bg-danger/10 hover:bg-danger/20', key: '1' },
+    { value: 3, label: 'Seen, Need Practice', description: 'Re-calibrate soon (Interval: 1d)', color: 'border-warning/30 text-warning bg-warning/10 hover:bg-warning/20', key: '2' },
+    { value: 5, label: 'Mastered Pattern', description: 'Fast-track to 4+ days', color: 'border-success/30 text-success bg-success/10 hover:bg-success/20', key: '3' },
+  ];
+
   return (
-    <div className="w-full h-[calc(100vh-80px)] flex flex-col">
-      {/* Header Area */}
-      <div className="flex justify-between items-center shrink-0 px-6 py-4">
-        <h1 className="text-xl font-bold">Study Session</h1>
-        <div className="flex items-center gap-4">
-          <div className={`text-sm font-mono font-medium px-3 py-1.5 rounded-lg border transition-all ${isTimerWarning ? 'bg-danger/15 text-danger border-danger/40 animate-pulse font-bold shadow-sm' : 'bg-surface border-border text-muted-text'}`}>
-            ⏱ {formatTime(elapsedSeconds)} {isTimerWarning && '⚠️'}
-          </div>
-          <span className="text-sm font-medium text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 shadow-sm">
-            Card {currentIndex} of {originalCount}
+    <div className="w-full h-[calc(100vh-64px)] flex flex-col bg-background">
+      {/* Workbench Status Bar */}
+      <div className="flex justify-between items-center shrink-0 px-4 sm:px-6 py-2.5 border-b border-border bg-surface text-xs font-mono">
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-text">
+            [ ACTIVE DRILL WORKBENCH ]
           </span>
+          <span className="text-muted-text hidden sm:inline">•</span>
+          <span className="text-muted-text hidden sm:inline">
+            CARD {currentIndex} OF {originalCount}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className={`px-2.5 py-1 rounded border tabular-nums transition-colors ${
+            isTimerWarning 
+              ? 'bg-danger/10 text-danger border-danger/40 font-bold animate-pulse' 
+              : 'bg-background border-border text-muted-text'
+          }`}>
+            TIMER {formatTime(elapsedSeconds)} {isTimerWarning && '[LIMIT EXCEEDED]'}
+          </div>
+
+          <div className="px-2.5 py-1 rounded bg-background border border-border text-text font-bold tabular-nums">
+            {Math.round((currentIndex / originalCount) * 100)}%
+          </div>
         </div>
       </div>
 
       {/* Split Pane Area */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-2 min-h-0 px-2 pb-2">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         
-        {/* LEFT PANE - Tabbed Content */}
-        <div className="flex-1 bg-surface rounded-2xl border border-border shadow-xl shadow-black/5 dark:shadow-black/40 flex flex-col relative overflow-hidden">
+        {/* LEFT PANE - Tabbed Problem & Reference Code */}
+        <div className="flex-1 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-surface overflow-hidden">
           
-          {/* Tab Headers */}
-          <div className="flex border-b border-border bg-surface/50 backdrop-blur-sm shrink-0">
+          {/* Tab Navigation */}
+          <div className="flex border-b border-border bg-background/50 shrink-0 font-mono text-xs">
             <button 
               onClick={() => setActiveTab('description')}
-              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'description' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-text hover:text-text hover:bg-background/50'}`}
+              className={`flex-1 py-2.5 px-4 font-semibold transition-colors border-b-2 ${
+                activeTab === 'description' 
+                  ? 'border-primary text-primary bg-primary/5' 
+                  : 'border-transparent text-muted-text hover:text-text'
+              }`}
             >
-              Description
+              [ 01 STATEMENT ]
             </button>
             <button 
               onClick={() => setActiveTab('solution')}
-              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors border-b-2 flex items-center justify-center gap-2 ${activeTab === 'solution' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-text hover:text-text hover:bg-background/50'}`}
+              className={`flex-1 py-2.5 px-4 font-semibold transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
+                activeTab === 'solution' 
+                  ? 'border-primary text-primary bg-primary/5' 
+                  : 'border-transparent text-muted-text hover:text-text'
+              }`}
             >
-              My Solution {isRevealed && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+              [ 02 SOLUTION ] {isRevealed && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
             </button>
             <button 
               onClick={() => setActiveTab('notes')}
-              className={`flex-1 py-3 px-4 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'notes' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted-text hover:text-text hover:bg-background/50'}`}
+              className={`flex-1 py-2.5 px-4 font-semibold transition-colors border-b-2 ${
+                activeTab === 'notes' 
+                  ? 'border-primary text-primary bg-primary/5' 
+                  : 'border-transparent text-muted-text hover:text-text'
+              }`}
             >
-              Notes
+              [ 03 NOTES ]
             </button>
           </div>
 
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10">
+          {/* Tab Content Area */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
             
             {/* Description Tab */}
             {activeTab === 'description' && (
-              <div className="animate-in fade-in duration-300 flex flex-col min-h-full">
-                <div className="p-6 border-b border-border bg-background/30 shrink-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-xl font-bold mb-3">{currentCard.title}</h2>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm ${
-                          currentCard.difficulty === 'EASY' ? 'bg-success/10 text-success border border-success/20' :
-                          currentCard.difficulty === 'MEDIUM' ? 'bg-warning/10 text-warning border border-warning/20' :
-                          'bg-danger/10 text-danger border border-danger/20'
-                        }`}>
-                          {currentCard.difficulty}
-                        </span>
-                        {isNewCard ? (
-                          <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5 shadow-sm">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                            🆕 New Problem
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1.5 shadow-sm">
-                            🔄 Review
-                          </span>
-                        )}
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="pb-3 border-b border-border space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className="text-lg font-bold text-text tracking-tight font-mono">
+                      {currentCard.title}
+                    </h2>
                     {currentCard.leetcodeUrl && (
                       <a 
                         href={currentCard.leetcodeUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-muted-text hover:text-primary transition-colors text-sm flex items-center gap-1.5 bg-background px-3 py-1.5 rounded-lg font-medium border border-border shadow-sm hover:border-primary/50"
+                        className="text-xs font-mono text-muted-text hover:text-primary transition-colors flex items-center gap-1 bg-background px-2 py-1 rounded border border-border shrink-0 uppercase text-[11px]"
                       >
-                        LeetCode
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
+                        LEETCODE -&gt;
                       </a>
                     )}
                   </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                      currentCard.difficulty === 'EASY' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' :
+                      currentCard.difficulty === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' :
+                      'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                    }`}>
+                      {currentCard.difficulty}
+                    </span>
+
+                    {isNewCard ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
+                        NEW CARD
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-success/10 text-success border border-success/20">
+                        SPACED REVIEW
+                      </span>
+                    )}
+
+                    {currentCard.tags?.map(tag => (
+                      <span key={tag.id || tag.name} className="px-2 py-0.5 rounded text-[10px] font-mono bg-background border border-border text-muted-text">
+                        #{tag.name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="p-6 prose prose-sm dark:prose-invert max-w-none text-muted-text">
+
+                <div className="text-xs text-text leading-relaxed prose dark:prose-invert max-w-none">
                   {loadingDesc ? (
-                    <div className="animate-pulse space-y-2">
-                      <div className="h-4 bg-border rounded w-3/4"></div>
-                      <div className="h-4 bg-border rounded w-1/2"></div>
-                      <div className="h-4 bg-border rounded w-5/6"></div>
+                    <div className="animate-pulse space-y-2 py-4">
+                      <div className="h-3 bg-border rounded w-3/4" />
+                      <div className="h-3 bg-border rounded w-1/2" />
+                      <div className="h-3 bg-border rounded w-5/6" />
                     </div>
                   ) : description ? (
                     <div dangerouslySetInnerHTML={{ __html: description }} />
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                      <p className="italic opacity-50">Description failed to load.</p>
+                    <div className="text-center py-10 space-y-3 font-mono text-xs">
+                      <p className="text-muted-text">Problem description not available locally.</p>
                       <button 
                         onClick={loadDescription}
-                        className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+                        className="bg-surface border border-border px-3 py-1.5 rounded text-xs text-text hover:bg-background transition-colors uppercase"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Reload Description
+                        [ Retry Description Fetch ]
                       </button>
                     </div>
                   )}
@@ -489,65 +560,54 @@ function StudyContent() {
 
             {/* Solution Tab */}
             {activeTab === 'solution' && (
-              <div className="p-6 animate-in fade-in duration-300">
+              <div>
                 {!isRevealed ? (
-                  <div className="flex flex-col items-center justify-center h-48 text-muted-text space-y-4">
-                    <svg className="w-12 h-12 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <p>Solution is hidden to test your memory.</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 font-mono">
+                    <p className="text-xs text-muted-text">Reference solution is hidden during active recall.</p>
                     <button 
                       onClick={revealAnswer}
-                      className="text-primary hover:underline text-sm font-medium"
+                      className="text-xs text-primary hover:underline font-semibold uppercase"
                     >
-                      Click here or press Ctrl + &apos; to reveal
+                      [ Click to reveal or press Ctrl + &apos; ]
                     </button>
                   </div>
                 ) : (
-                  <div>
+                  <div className="space-y-3">
                     {currentCard.userSolution && !isAddingSolution ? (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-end">
-                          <h3 className="text-base font-semibold text-text">Your Saved Solution</h3>
-                          <div className="flex gap-2 items-center">
-                            {currentCard.language && <span className="text-xs text-muted-text font-medium bg-background px-2.5 py-1 rounded-md border border-border">{currentCard.language}</span>}
-                            <button 
-                              onClick={() => {
-                                setNewSolutionCode(currentCard.userSolution || '');
-                                setIsAddingSolution(true);
-                              }}
-                              className="text-xs text-primary hover:underline"
-                            >
-                              Edit
-                            </button>
-                          </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-xs font-semibold text-text uppercase">[ Canonical Solution ]</span>
+                          <button 
+                            onClick={() => {
+                              setNewSolutionCode(currentCard.userSolution || '');
+                              setIsAddingSolution(true);
+                            }}
+                            className="font-mono text-xs text-primary hover:underline uppercase"
+                          >
+                            [ Edit ]
+                          </button>
                         </div>
-                        
-                        {/* Wrap the solution in markdown codeblocks so it gets syntax highlighted */}
                         <MarkdownRenderer 
                           content={`\`\`\`${currentCard.language || 'javascript'}\n${currentCard.userSolution}\n\`\`\``}
                         />
                       </div>
                     ) : isAddingSolution ? (
-                      <div className="space-y-3 flex flex-col">
+                      <div className="space-y-3 font-mono">
                         <div className="flex justify-between items-center">
-                          <h3 className="text-base font-semibold text-text">Add / Edit Solution</h3>
+                          <span className="text-xs font-semibold text-text uppercase">[ Edit Solution Code ]</span>
                           <select
                             value={currentLanguage}
                             onChange={(e) => setCurrentLanguage(e.target.value)}
-                            className="bg-background border border-border text-xs px-2 py-1 rounded-lg focus:outline-none focus:border-primary text-text"
+                            className="bg-background border border-border text-xs px-2 py-1 rounded font-mono text-text focus:outline-none focus:border-primary"
                           >
                             <option value="javascript">JavaScript</option>
                             <option value="typescript">TypeScript</option>
                             <option value="python">Python</option>
                             <option value="java">Java</option>
                             <option value="cpp">C++</option>
-                            <option value="csharp">C#</option>
-                            <option value="go">Go</option>
-                            <option value="rust">Rust</option>
                           </select>
                         </div>
-                        <div className="w-full h-[300px] border border-border rounded-xl overflow-hidden shadow-inner">
+                        <div className="w-full h-[280px] border border-border rounded-lg overflow-hidden">
                           <MonacoEditor
                             height="100%"
                             defaultLanguage={currentLanguage}
@@ -557,20 +617,20 @@ function StudyContent() {
                             onChange={(val) => setNewSolutionCode(val || '')}
                             options={{
                               minimap: { enabled: false },
-                              fontSize: 14,
+                              fontSize: 13,
                               fontFamily: '"Fira Code", "JetBrains Mono", monospace',
-                              padding: { top: 16, bottom: 16 },
+                              padding: { top: 12, bottom: 12 },
                               scrollBeyondLastLine: false,
                               tabSize: 2,
                             }}
                           />
                         </div>
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2 pt-1">
                           <button 
                             onClick={() => setIsAddingSolution(false)}
-                            className="px-4 py-2 text-sm text-muted-text hover:text-text transition-colors"
+                            className="px-3 py-1.5 text-xs text-muted-text hover:text-text transition-colors uppercase"
                           >
-                            Cancel
+                            [ Cancel ]
                           </button>
                           <button 
                             onClick={async () => {
@@ -585,29 +645,29 @@ function StudyContent() {
                                 if (res.ok) {
                                   setQueue(prev => prev.map((p, i) => i === 0 ? { ...p, userSolution: newSolutionCode, language: currentLanguage } : p));
                                   setIsAddingSolution(false);
-                                  toast.success("Solution saved");
+                                  toast.success("Solution updated");
                                 } else throw new Error();
                               } catch {
-                                toast.error("Failed to save solution");
+                                toast.error("Failed to update solution");
                               }
                             }}
-                            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+                            className="bg-primary text-white px-4 py-1.5 rounded text-xs font-semibold hover:opacity-90 uppercase"
                           >
                             Save Solution
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-40 text-muted-text italic gap-4">
-                        <p>No solution provided for this problem.</p>
+                      <div className="text-center py-12 space-y-3 font-mono text-xs">
+                        <p className="text-muted-text">No reference solution recorded for this problem yet.</p>
                         <button 
                           onClick={() => {
                             setNewSolutionCode('');
                             setIsAddingSolution(true);
                           }}
-                          className="text-primary not-italic text-sm font-semibold bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-lg transition-colors border border-primary/20"
+                          className="bg-surface border border-border px-3.5 py-1.5 rounded text-xs font-semibold text-text hover:bg-background transition-colors uppercase"
                         >
-                          + Add Solution Now
+                          + Add Canonical Solution
                         </button>
                       </div>
                     )}
@@ -618,28 +678,15 @@ function StudyContent() {
 
             {/* Notes Tab */}
             {activeTab === 'notes' && (
-              <div className="p-6 animate-in fade-in duration-300">
-                {currentCard.tags && currentCard.tags.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-text mb-3">Topic Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {currentCard.tags.map(tag => (
-                        <span key={tag.id} className="bg-background text-primary px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/20 bg-primary/5 shadow-sm">
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <h3 className="text-sm font-semibold text-text mb-3">My Notes</h3>
+              <div className="space-y-4 font-mono">
+                <span className="text-xs font-semibold text-text uppercase">[ Pattern Learnings ]</span>
                 {currentCard.notes ? (
-                  <div className="bg-surface border border-border p-5 rounded-xl shadow-inner">
+                  <div className="bg-background border border-border p-4 rounded-lg font-sans">
                     <MarkdownRenderer content={currentCard.notes} />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-20 text-muted-text italic bg-background/50 rounded-xl border border-border/50">
-                    No notes provided for this problem.
+                  <div className="text-center py-12 text-xs text-muted-text border border-dashed border-border rounded-lg">
+                    No notes recorded for this problem.
                   </div>
                 )}
               </div>
@@ -647,33 +694,27 @@ function StudyContent() {
           </div>
         </div>
 
-        {/* RIGHT PANE - Uninterrupted Scratchpad & Grading */}
-        <div className="flex-1 bg-surface rounded-2xl border border-border shadow-xl shadow-black/5 dark:shadow-black/40 overflow-hidden flex flex-col relative">
+        {/* RIGHT PANE - Live Code Scratchpad & Calibrated Rating Scale */}
+        <div className="flex-1 flex flex-col bg-[#0D1117] overflow-hidden font-mono">
           
-          <div className="p-4 border-b border-border flex justify-between items-center bg-surface/50 backdrop-blur-sm shrink-0">
-            <h3 className="font-semibold text-text flex items-center gap-2 text-sm">
-              <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-              Code Scratchpad
-            </h3>
+          {/* Scratchpad Header */}
+          <div className="px-4 py-2 border-b border-border/80 flex justify-between items-center bg-[#0D1117] shrink-0 text-xs text-muted-text">
+            <span className="text-text font-semibold">[ CODE SCRATCHPAD ]</span>
             <select
               value={currentLanguage}
               onChange={(e) => setCurrentLanguage(e.target.value)}
-              className="bg-background border border-border text-xs px-2 py-1 rounded-lg focus:outline-none focus:border-primary text-text"
+              className="bg-background border border-border text-xs px-2 py-0.5 rounded font-mono text-text focus:outline-none focus:border-primary"
             >
               <option value="javascript">JavaScript</option>
               <option value="typescript">TypeScript</option>
               <option value="python">Python</option>
               <option value="java">Java</option>
               <option value="cpp">C++</option>
-              <option value="csharp">C#</option>
-              <option value="go">Go</option>
-              <option value="rust">Rust</option>
             </select>
           </div>
           
-          <div className="flex-1 p-0 relative bg-[#1e1e1e] overflow-hidden">
+          {/* Monaco Scratchpad */}
+          <div className="flex-1 p-0 relative overflow-hidden">
             <MonacoEditor
               height="100%"
               defaultLanguage={currentLanguage}
@@ -683,9 +724,9 @@ function StudyContent() {
               onChange={(val) => setScratchpadCode(val || '')}
               options={{
                 minimap: { enabled: false },
-                fontSize: 14,
+                fontSize: 13,
                 fontFamily: '"Fira Code", "JetBrains Mono", monospace',
-                padding: { top: 16, bottom: 16 },
+                padding: { top: 12, bottom: 12 },
                 scrollBeyondLastLine: false,
                 tabSize: 2,
                 wordWrap: 'on'
@@ -693,98 +734,99 @@ function StudyContent() {
             />
           </div>
           
-          {/* Bottom Action Area (Reveal or Grade) */}
+          {/* Action / Rating Footer */}
           {!isRevealed ? (
-            <div className="p-4 border-t border-border bg-surface/80 backdrop-blur-sm shrink-0 flex justify-end">
+            <div className="p-4 border-t border-border bg-surface shrink-0">
               <button
                 onClick={revealAnswer}
-                className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 w-full flex items-center justify-center gap-2"
+                className="w-full bg-text text-background py-3 rounded-lg font-semibold text-xs font-mono uppercase tracking-wider hover:opacity-90 transition-opacity shadow-sm flex items-center justify-center gap-2"
               >
-                Reveal Answer
-                <span className="opacity-60 text-sm font-normal ml-2 hidden md:inline">(Ctrl + &apos;)</span>
+                <span>Reveal Canonical Solution</span>
+                <span className="opacity-60 text-[10px] lowercase font-normal">(ctrl + &apos;)</span>
               </button>
             </div>
           ) : isNewCard && !showFullScaleForNew ? (
-            <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300 space-y-3">
-              <div className="text-center">
-                <h3 className="font-bold text-text text-sm flex items-center justify-center gap-1.5">
-                  <span>🆕</span> Rate your initial familiarity
-                </h3>
-                <p className="text-[11px] text-muted-text mt-0.5">
-                  Since this is a new problem, setting your familiarity sets its initial review schedule.
-                </p>
+            /* New Card 3-Point Initial Calibration */
+            <div className="p-4 border-t border-border bg-surface shrink-0 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-text uppercase tracking-wider">
+                  [ Rate Initial Familiarity ]
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowFullScaleForNew(true)}
+                  className="text-[10px] text-muted-text hover:text-text underline uppercase"
+                >
+                  Use 0–5 Scale
+                </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {NEW_CARD_SCORES.map(score => (
                   <button
                     key={score.value}
                     onClick={() => handleGrade(score.value)}
                     disabled={isSubmitting}
-                    className={`flex flex-col items-center p-3 rounded-xl border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'}`}
+                    className={`flex flex-col items-center justify-center p-2.5 rounded-lg border transition-all text-center ${score.color} ${isSubmitting ? 'opacity-50' : 'hover:scale-[1.02]'}`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-xs">{score.label}</span>
-                      {score.key && <span className="opacity-100 text-[10px] font-bold font-mono border-2 border-current bg-background/30 rounded px-1.5 hidden sm:inline">{score.key}</span>}
+                    <div className="flex items-center gap-1.5 font-bold text-xs">
+                      <span>{score.label}</span>
+                      <span className="px-1 py-0.2 rounded border border-current text-[9px]">[{score.key}]</span>
                     </div>
-                    <span className="text-[10px] opacity-80 text-center leading-tight">{score.description}</span>
+                    <span className="text-[10px] opacity-80 mt-0.5 leading-tight">{score.description}</span>
                   </button>
                 ))}
               </div>
-              <div className="text-center pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowFullScaleForNew(true)}
-                  className="text-xs text-muted-text hover:text-text transition-colors underline"
-                >
-                  Switch to standard 0–5 scale
-                </button>
-              </div>
             </div>
           ) : (
-            <div className="p-5 border-t border-border bg-background shrink-0 animate-in slide-in-from-bottom-4 duration-300 space-y-3">
-              <div className="text-center">
-                <h3 className="font-bold text-text text-sm">How well did you remember this?</h3>
-                {isTimerWarning && (
-                  <p className="text-[11px] text-danger mt-0.5 font-medium">
-                    ⚠️ You took longer than expected for this {currentCard.difficulty.toLowerCase()} problem.
-                  </p>
+            /* Standard SM-2 0-5 Mathematical Interval Predictor Grading Scale */
+            <div className="p-4 border-t border-border bg-surface shrink-0 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-text uppercase tracking-wider">
+                  [ Self-Grade Memory Recall (SM-2) ]
+                </span>
+                {isNewCard && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullScaleForNew(false)}
+                    className="text-[10px] text-muted-text hover:text-text underline uppercase"
+                  >
+                    Use 3-point scale
+                  </button>
                 )}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {QUALITY_SCORES.map(score => {
                   const isSuggested = score.value === suggestedGrade;
+                  const predictedInterval = computePredictedInterval(score.value, currentCard);
                   return (
                     <button
                       key={score.value}
                       onClick={() => handleGrade(score.value)}
                       disabled={isSubmitting}
-                      className={`flex flex-col items-center p-2 rounded-lg border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0'} ${isSuggested ? 'ring-2 ring-primary ring-offset-2 ring-offset-background font-bold shadow-md' : ''}`}
+                      className={`flex flex-col items-center justify-between p-2 rounded-lg border transition-all relative ${score.color} ${isSubmitting ? 'opacity-50' : 'hover:scale-[1.02]'} ${isSuggested ? 'ring-2 ring-primary ring-offset-1 ring-offset-background font-bold shadow-sm' : ''}`}
                     >
                       {isSuggested && (
-                        <span className="absolute -top-2.5 bg-primary text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md animate-bounce">
-                          Suggested
+                        <span className="absolute -top-2 bg-primary text-white text-[8px] font-bold px-1.5 py-0.2 rounded uppercase">
+                          REC
                         </span>
                       )}
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-xs">{score.label}</span>
-                        {score.key && <span className="opacity-100 text-[11px] font-bold font-mono border-2 border-current bg-background/30 rounded px-1.5 hidden md:inline">{score.key}</span>}
+                      <div className="flex items-center gap-1 font-bold text-xs">
+                        <span>[{score.value}]</span>
+                        <span className="text-[10px] opacity-80">{score.label}</span>
                       </div>
-                      <span className="text-[9px] opacity-80 text-center leading-tight">{score.description}</span>
+                      <div className="text-[9px] font-semibold mt-1 px-1.5 py-0.2 rounded bg-background/50 border border-current/30">
+                        {predictedInterval}
+                      </div>
                     </button>
                   );
                 })}
               </div>
-              {isNewCard && (
-                <div className="text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowFullScaleForNew(false)}
-                    className="text-xs text-muted-text hover:text-text transition-colors underline"
-                  >
-                    Back to simplified 3-point scale
-                  </button>
-                </div>
-              )}
+
+              <div className="text-[10px] text-muted-text text-center">
+                Press keys <kbd className="bg-background px-1 rounded border border-border">0</kbd>–<kbd className="bg-background px-1 rounded border border-border">5</kbd> for rapid grading.
+              </div>
             </div>
           )}
           

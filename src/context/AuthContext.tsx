@@ -37,9 +37,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }, 5000);
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       clearTimeout(timeout);
       setUser(currentUser);
+      if (currentUser && currentUser.email) {
+        try {
+          const token = await currentUser.getIdToken();
+          await syncUserWithDatabase(token, currentUser.email, currentUser.displayName || undefined);
+        } catch (e) {
+          console.error('Error syncing user on auth state change:', e);
+        }
+      }
       setLoading(false);
     });
     return () => {

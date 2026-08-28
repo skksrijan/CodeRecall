@@ -51,7 +51,7 @@ export default function DeckProblemsPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    if (!confirm('Are you sure you want to delete this problem?')) return;
+    if (!confirm('Are you sure you want to delete this problem from the deck?')) return;
     
     try {
       const res = await fetch(`/api/problems/${id}`, {
@@ -76,27 +76,36 @@ export default function DeckProblemsPage() {
   };
 
   const difficultyColors: Record<string, string> = {
-    EASY: 'bg-green-500/10 text-green-500 border-green-500/30',
-    MEDIUM: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30',
-    HARD: 'bg-red-500/10 text-red-500 border-red-500/30'
+    EASY: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
+    MEDIUM: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+    HARD: 'bg-rose-500/10 text-rose-500 border-rose-500/30'
   };
 
   const difficultyLevels: Record<string, number> = { EASY: 1, MEDIUM: 2, HARD: 3 };
 
-  if (loading) return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6 animate-pulse">
-      <div className="h-4 w-24 bg-surface rounded"></div>
-      <div className="flex justify-between items-center">
-        <div className="space-y-2">
-          <div className="h-8 w-64 bg-surface rounded"></div>
-          <div className="h-4 w-96 bg-surface rounded"></div>
+  if (loading) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto space-y-6">
+        <div className="h-4 w-24 bg-surface rounded animate-pulse" />
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-surface rounded animate-pulse" />
+            <div className="h-4 w-96 bg-surface rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-surface rounded animate-pulse" />
         </div>
-        <div className="h-10 w-32 bg-surface rounded"></div>
+        <div className="h-96 w-full bg-surface rounded-xl border border-border animate-pulse" />
       </div>
-      <div className="h-96 w-full bg-surface rounded-xl"></div>
-    </div>
-  );
-  if (!deck) return <div className="p-8 max-w-6xl mx-auto">Deck not found</div>;
+    );
+  }
+
+  if (!deck) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto text-center py-20 font-mono text-sm text-muted-text">
+        Deck entry not found in active catalog.
+      </div>
+    );
+  }
 
   const allTags = Array.from(new Set(problems.flatMap(p => p.tags?.map((t: any) => t.name) || [])));
 
@@ -152,48 +161,80 @@ export default function DeckProblemsPage() {
   });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-4 text-sm text-muted-text">
-        <Link href="/app/decks" className="hover:text-primary transition">← Back to Decks</Link>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      {/* Back Link */}
+      <div>
+        <Link
+          href="/app/decks"
+          className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-text hover:text-text transition-colors"
+        >
+          <span>&lt;- Back to Decks Catalog</span>
+        </Link>
       </div>
       
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-border">
         <div>
-          <h1 className="text-3xl font-bold">{deck.name}</h1>
-          {deck.description && <p className="text-muted-text mt-2">{deck.description}</p>}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-muted-text">
+              [DECK INVENTORY]
+            </span>
+            <span className="font-mono text-xs text-muted-text">
+              • {problems.length} Problems Total
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text font-mono">
+            {deck.name}
+          </h1>
+          {deck.description && (
+            <p className="text-xs text-muted-text mt-1 max-w-2xl leading-relaxed">
+              {deck.description}
+            </p>
+          )}
         </div>
-        <button
-          onClick={() => { setEditingProblem(null); setIsModalOpen(true); }}
-          className="bg-primary text-white px-5 py-2.5 rounded-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors font-semibold shrink-0"
-        >
-          + Add Problem
-        </button>
+
+        <div className="flex items-center gap-2.5 font-mono">
+          <Link
+            href={`/app/study?deckId=${deck.id}`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface border border-border text-xs font-semibold text-text hover:bg-background transition-colors shadow-sm uppercase tracking-wider"
+          >
+            Study Deck -&gt;
+          </Link>
+          <button
+            onClick={() => { setEditingProblem(null); setIsModalOpen(true); }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-text text-background text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm uppercase tracking-wider"
+          >
+            + Add Problem
+          </button>
+        </div>
       </div>
 
       {/* Filter and Sort Toolbar */}
-      <div className="bg-surface border border-border p-4 rounded-xl mb-6 flex flex-wrap gap-4 items-center">
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[120px]">
-          <label className="text-xs font-semibold text-muted-text uppercase tracking-wider">Difficulty</label>
+      <div className="bg-surface border border-border p-3.5 rounded-xl flex flex-wrap gap-3 items-center text-xs font-mono">
+        <div className="text-muted-text uppercase text-[10px] font-bold mr-1">
+          [FILTERS]
+        </div>
+
+        <div className="flex flex-col gap-1 min-w-[120px]">
           <select 
             value={filterDifficulty} 
             onChange={e => setFilterDifficulty(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary font-medium"
           >
-            <option value="ALL">All</option>
+            <option value="ALL">Difficulty: All</option>
             <option value="EASY">Easy</option>
             <option value="MEDIUM">Medium</option>
             <option value="HARD">Hard</option>
           </select>
         </div>
         
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[120px]">
-          <label className="text-xs font-semibold text-muted-text uppercase tracking-wider">Status</label>
+        <div className="flex flex-col gap-1 min-w-[130px]">
           <select 
             value={filterStatus} 
             onChange={e => setFilterStatus(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary font-medium"
           >
-            <option value="ALL">All Statuses</option>
+            <option value="ALL">Status: All</option>
             <option value="UNREVIEWED">Unreviewed (New)</option>
             <option value="DUE_TODAY">Due Today</option>
             <option value="OVERDUE">Overdue</option>
@@ -202,123 +243,134 @@ export default function DeckProblemsPage() {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[120px]">
-          <label className="text-xs font-semibold text-muted-text uppercase tracking-wider">Tag</label>
+        <div className="flex flex-col gap-1 min-w-[120px]">
           <select 
             value={filterTag} 
             onChange={e => setFilterTag(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary font-medium"
           >
-            <option value="ALL">All Tags</option>
+            <option value="ALL">Tag: All</option>
             {allTags.map((t: unknown) => (
               <option key={t as string} value={t as string}>{t as string}</option>
             ))}
           </select>
         </div>
 
-        <div className="w-px h-10 bg-border hidden lg:block mx-2" />
+        <div className="w-px h-6 bg-border hidden lg:block mx-1" />
 
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[150px]">
-          <label className="text-xs font-semibold text-muted-text uppercase tracking-wider">Sort By</label>
-          <div className="flex gap-2">
-            <select 
-              value={sortField} 
-              onChange={e => setSortField(e.target.value)}
-              className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary flex-1"
-            >
-              <option value="nextReviewDate">Review Date</option>
-              <option value="title">Title</option>
-              <option value="difficulty">Difficulty</option>
-            </select>
-            <button 
-              onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-              className="bg-background border border-border rounded-lg px-3 py-2 hover:bg-surface transition-colors"
-              title="Toggle sort direction"
-            >
-              {sortDir === 'asc' ? '↑' : '↓'}
-            </button>
-          </div>
+        <div className="flex items-center gap-1.5 ml-auto">
+          <span className="text-[10px] uppercase font-bold text-muted-text">SORT:</span>
+          <select 
+            value={sortField} 
+            onChange={e => setSortField(e.target.value)}
+            className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs text-text focus:outline-none focus:border-primary font-medium"
+          >
+            <option value="nextReviewDate">Next Review Date</option>
+            <option value="title">Problem Title</option>
+            <option value="difficulty">Difficulty</option>
+          </select>
+          <button 
+            onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+            className="bg-background border border-border rounded-lg px-2.5 py-1.5 text-xs hover:bg-surface transition-colors uppercase font-bold"
+            title="Toggle sort order"
+          >
+            {sortDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
+          </button>
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl shadow-xl shadow-black/5 dark:shadow-black/40 border border-border overflow-hidden">
+      {/* Problem Records Table */}
+      <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-sm">
         {filteredProblems.length === 0 ? (
-          <div className="p-8 text-center text-muted-text">
-            No problems match the selected filters.
+          <div className="p-12 text-center text-xs font-mono text-muted-text">
+            No problems match the specified query filters.
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-muted-text/20 bg-muted-text/5">
-                <th className="p-4 font-semibold">Title</th>
-                <th className="p-4 font-semibold">Difficulty</th>
-                <th className="p-4 font-semibold">Tags</th>
-                <th className="p-4 font-semibold">Next Review</th>
-                <th className="p-4 font-semibold text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProblems.map(problem => {
-                const isUnreviewed = !problem.reviewState || problem.reviewState.repetitions === 0;
-                return (
-                  <tr key={problem.id} className="border-b border-border hover:bg-background/50 transition">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <Link href={`/app/study?problemId=${problem.id}`} className="text-text font-medium hover:text-primary transition-colors">
-                          {problem.title}
-                        </Link>
-                        {isUnreviewed && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 flex items-center gap-1 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                            Unreviewed
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${difficultyColors[problem.difficulty]}`}>
-                        {problem.difficulty}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {problem.tags?.map((t: any) => (
-                          <span key={t.id} className="bg-background border border-border text-muted-text text-xs px-2 py-0.5 rounded shadow-sm">
-                            {t.name}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-muted-text">
-                      {isUnreviewed ? (
-                        <span className="text-primary font-medium text-xs bg-primary/5 px-2 py-1 rounded border border-primary/10">
-                          Unreviewed (New)
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-background/50 font-mono text-[10px] uppercase tracking-wider text-muted-text">
+                  <th className="py-3 px-4 font-semibold">Problem Title</th>
+                  <th className="py-3 px-4 font-semibold">Difficulty</th>
+                  <th className="py-3 px-4 font-semibold">Tags</th>
+                  <th className="py-3 px-4 font-semibold">Next Scheduled Recall</th>
+                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border text-xs font-mono">
+                {filteredProblems.map(problem => {
+                  const isUnreviewed = !problem.reviewState || problem.reviewState.repetitions === 0;
+                  return (
+                    <tr key={problem.id} className="hover:bg-background/40 transition-colors group">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/app/study?problemId=${problem.id}`}
+                            className="text-text font-semibold hover:text-primary transition-colors line-clamp-1 font-sans"
+                          >
+                            {problem.title}
+                          </Link>
+                          {isUnreviewed && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 shrink-0">
+                              NEW
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${difficultyColors[problem.difficulty]}`}>
+                          {problem.difficulty}
                         </span>
-                      ) : problem.reviewState ? (
-                        new Date(problem.reviewState.nextReviewDate).toLocaleDateString()
-                      ) : (
-                        'Not scheduled'
-                      )}
-                    </td>
-                  <td className="p-4 text-right space-x-3">
-                    <button
-                      onClick={() => { setEditingProblem(problem); setIsModalOpen(true); }}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(e, problem.id)}
-                      className="text-sm text-danger hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-wrap gap-1">
+                          {problem.tags?.map((t: any) => (
+                            <span key={t.id || t.name} className="bg-background border border-border text-muted-text text-[10px] px-1.5 py-0.5 rounded">
+                              #{t.name}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-muted-text">
+                        {isUnreviewed ? (
+                          <span className="text-primary font-medium">[UNREVIEWED]</span>
+                        ) : problem.reviewState ? (
+                          new Date(problem.reviewState.nextReviewDate).toLocaleDateString()
+                        ) : (
+                          'Not scheduled'
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5 text-[11px]">
+                          <Link
+                            href={`/app/study?problemId=${problem.id}`}
+                            className="px-1.5 py-0.5 text-muted-text hover:text-primary hover:bg-background border border-border rounded transition-colors"
+                            title="Drill Problem"
+                          >
+                            DRILL
+                          </Link>
+                          <button
+                            onClick={() => { setEditingProblem(problem); setIsModalOpen(true); }}
+                            className="px-1.5 py-0.5 text-muted-text hover:text-text hover:bg-background border border-border rounded transition-colors"
+                            title="Edit Problem"
+                          >
+                            EDIT
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(e, problem.id)}
+                            className="px-1.5 py-0.5 text-muted-text hover:text-danger hover:bg-danger/10 border border-border rounded transition-colors"
+                            title="Delete Problem"
+                          >
+                            DEL
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

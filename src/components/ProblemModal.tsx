@@ -133,46 +133,70 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
     }
   };
 
-  // Custom react-select styles to match Tailwind
+  // Custom react-select styles to match precision theme
   const customStyles = {
-    control: (base: any) => ({
+    control: (base: any, state: any) => ({
       ...base,
-      backgroundColor: 'var(--background)',
-      borderColor: 'rgba(var(--muted-text), 0.3)',
-      color: 'inherit',
+      backgroundColor: 'hsl(var(--background))',
+      borderColor: state.isFocused ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+      boxShadow: 'none',
+      borderRadius: '0.5rem',
+      padding: '2px',
+      color: 'hsl(var(--text))',
     }),
     menu: (base: any) => ({
       ...base,
-      backgroundColor: 'var(--surface)',
-      color: 'inherit',
+      backgroundColor: 'hsl(var(--surface))',
+      border: '1px solid hsl(var(--border))',
+      borderRadius: '0.5rem',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      color: 'hsl(var(--text))',
     }),
     option: (base: any, state: any) => ({
       ...base,
-      backgroundColor: state.isFocused ? 'rgba(var(--primary), 0.1)' : 'transparent',
-      color: 'inherit',
+      backgroundColor: state.isFocused ? 'hsla(var(--primary)/0.1)' : 'transparent',
+      color: 'hsl(var(--text))',
+      fontSize: '0.875rem',
+      fontFamily: 'monospace',
     }),
     multiValue: (base: any) => ({
       ...base,
-      backgroundColor: 'rgba(var(--primary), 0.2)',
+      backgroundColor: 'hsla(var(--primary)/0.15)',
+      borderRadius: '0.375rem',
+      border: '1px solid hsla(var(--primary)/0.25)',
     }),
     multiValueLabel: (base: any) => ({
       ...base,
-      color: 'inherit',
+      color: 'hsl(var(--text))',
+      fontSize: '0.75rem',
+      fontFamily: 'monospace',
+    }),
+    input: (base: any) => ({
+      ...base,
+      color: 'hsl(var(--text))',
     }),
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl p-6 my-8">
-        <h2 className="text-2xl font-bold mb-6">{existingProblem ? 'Edit Problem' : 'Add Problem'}</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto animate-in fade-in duration-150">
+      <div className="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-2xl p-6 my-8 animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
+          <h2 className="text-base font-bold text-text tracking-tight">
+            {existingProblem ? 'Edit Problem Entry' : 'Add Problem to Deck'}
+          </h2>
+          <span className="font-mono text-[10px] text-muted-text uppercase">Catalog Entry</span>
+        </div>
         
-        <div className="mb-6 bg-muted-text/5 p-4 rounded border border-muted-text/10 flex items-end gap-2">
+        {/* LeetCode Autofill Toolbar */}
+        <div className="mb-5 bg-background p-3.5 rounded-lg border border-border flex items-end gap-2.5">
           <div className="flex-grow">
-            <label className="block text-sm font-medium mb-1">Autofill from LeetCode ID</label>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Autofill from LeetCode ID
+            </label>
             <input
               type="number"
-              placeholder="e.g. 1 for Two Sum"
-              className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              placeholder="e.g. 1 (Two Sum) or 15 (3Sum)"
+              className="w-full px-3 py-1.5 rounded-md bg-surface border border-border text-sm text-text focus:outline-none focus:border-primary font-mono placeholder:text-muted-text/50"
               value={leetcodeId}
               onChange={(e) => setLeetcodeId(e.target.value)}
             />
@@ -181,7 +205,7 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
             type="button"
             onClick={handleAutofill}
             disabled={autofilling || !leetcodeId}
-            className="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary/90 disabled:opacity-50 text-sm whitespace-nowrap"
+            className="px-4 py-1.5 bg-text text-background font-semibold rounded-md hover:opacity-90 disabled:opacity-50 text-xs font-mono tracking-wider uppercase transition-opacity shrink-0"
           >
             {autofilling ? 'Fetching...' : 'Autofill'}
           </button>
@@ -190,20 +214,26 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Title</label>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                Problem Title
+              </label>
               <input
                 type="text"
                 required
-                className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g. Container With Most Water"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary transition-colors font-medium"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">LeetCode URL (Optional)</label>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                LeetCode URL (Optional)
+              </label>
               <input
                 type="url"
-                className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="https://leetcode.com/problems/..."
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary transition-colors font-mono text-xs"
                 value={leetcodeUrl}
                 onChange={(e) => setLeetcodeUrl(e.target.value)}
               />
@@ -212,9 +242,11 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Difficulty</label>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                Difficulty
+              </label>
               <select
-                className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary transition-colors font-semibold"
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
               >
@@ -224,75 +256,76 @@ export default function ProblemModal({ isOpen, onClose, onSaved, existingProblem
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Tags</label>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+                Tags (Multi-select)
+              </label>
               <CreatableSelect
                 isMulti
                 options={existingTags}
                 value={tags}
                 onChange={(newValue) => setTags(newValue as any)}
                 styles={customStyles}
-                className="text-sm text-black dark:text-white"
-                theme={(theme) => ({
-                  ...theme,
-                  colors: {
-                    ...theme.colors,
-                    primary: 'var(--primary)',
-                  },
-                })}
+                className="text-xs"
+                placeholder="Type and press enter..."
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
+            <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider mb-1">
+              Core Pattern / Key Learnings (Notes)
+            </label>
             <textarea
-              className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
-              rows={3}
+              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary transition-colors placeholder:text-muted-text/50"
+              rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="What did you learn? What's the core pattern?"
+              placeholder="What invariant or pattern does this problem hinge on?"
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium">Your Solution</label>
+              <label className="block text-xs font-mono font-semibold text-text uppercase tracking-wider">
+                Reference Solution Code
+              </label>
               <select
-                className="p-1 text-sm rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="px-2 py-0.5 text-xs rounded bg-background border border-border text-text font-mono focus:outline-none focus:border-primary"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
               >
                 <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
                 <option value="python">Python</option>
                 <option value="java">Java</option>
                 <option value="cpp">C++</option>
               </select>
             </div>
             <textarea
-              className="w-full p-4 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-              rows={8}
+              className="w-full p-3 rounded-lg bg-background border border-border text-text focus:outline-none focus:border-primary font-mono text-xs custom-scrollbar"
+              rows={6}
               value={userSolution}
               onChange={(e) => setUserSolution(e.target.value)}
               spellCheck={false}
-              placeholder="// Write your code here..."
+              placeholder="// Paste or write your canonical optimal solution here..."
             />
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-border mt-4">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded border border-muted-text/30 hover:bg-muted-text/10"
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors text-muted-text hover:text-text disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+              className="px-5 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm"
             >
-              {saving ? 'Saving...' : 'Save Problem'}
+              {saving ? 'Saving...' : existingProblem ? 'Update Problem' : 'Save Problem'}
             </button>
           </div>
         </form>

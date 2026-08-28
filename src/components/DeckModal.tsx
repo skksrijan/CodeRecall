@@ -57,44 +57,55 @@ export default function DeckModal({ isOpen, onClose, onSaved, existingDeck, toke
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface rounded-lg shadow-xl w-full max-w-md p-6">
-        <h2 className="text-xl font-bold mb-4">{existingDeck ? 'Edit Deck' : 'New Deck'}</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+      <div className="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+          <h2 className="text-base font-bold text-text tracking-tight">
+            {existingDeck ? 'Edit Deck' : 'Create New Deck'}
+          </h2>
+          <span className="font-mono text-[10px] text-muted-text uppercase">Archive Entry</span>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-xs font-semibold text-text uppercase tracking-wider mb-1.5 font-mono">
+              Deck Name
+            </label>
             <input
               type="text"
               required
-              className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="e.g. Blind 75 Core, Dynamic Programming"
+              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-medium placeholder:text-muted-text/60"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+            <label className="block text-xs font-semibold text-text uppercase tracking-wider mb-1.5 font-mono">
+              Description (Optional)
+            </label>
             <textarea
-              className="w-full p-2 rounded bg-background border border-muted-text/30 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-muted-text/60"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Scope, target interview round, or focus topics..."
               rows={3}
             />
           </div>
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="flex justify-end gap-2.5 pt-2 border-t border-border mt-6">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded border border-muted-text/30 hover:bg-muted-text/10"
+              className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors text-muted-text hover:text-text disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50"
+              className="px-5 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? 'Saving...' : existingDeck ? 'Update Deck' : 'Create Deck'}
             </button>
           </div>
         </form>

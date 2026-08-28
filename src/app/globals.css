@@ -4,46 +4,76 @@
 
 @layer base {
   :root {
-    --background: 45 30% 96%;
-    --surface: 45 20% 98%;
+    --background: 210 20% 98%;
+    --surface: 0 0% 100%;
     --primary: 221 83% 53%;
-    --secondary: 262 83% 58%;
-    --success: 142 71% 45%;
-    --danger: 348 83% 47%;
-    --warning: 38 92% 50%;
+    --secondary: 215 25% 27%;
+    --success: 158 64% 38%;
+    --danger: 346 77% 49%;
+    --warning: 38 92% 44%;
     --muted-text: 215 16% 47%;
     --text: 222 47% 11%;
-    --border: 45 20% 90%;
+    --border: 214 32% 91%;
+    --recall-due: 38 92% 44%;
+    --mastered: 158 64% 38%;
+    --decay-risk: 346 77% 49%;
+    --workbench: 221 83% 53%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --surface: 217 33% 17%;
-    --primary: 217 91% 60%;
-    --secondary: 262 83% 68%;
-    --success: 142 71% 45%;
-    --danger: 348 83% 47%;
-    --warning: 38 92% 50%;
+    --background: 222 47% 7%;
+    --surface: 222 38% 11%;
+    --primary: 199 89% 48%;
+    --secondary: 215 20% 65%;
+    --success: 158 64% 52%;
+    --danger: 351 95% 71%;
+    --warning: 45 93% 58%;
     --muted-text: 215 20% 65%;
-    --text: 210 40% 98%;
-    --border: 217 33% 25%;
+    --text: 210 40% 96%;
+    --border: 217 33% 18%;
+    --recall-due: 45 93% 58%;
+    --mastered: 158 64% 52%;
+    --decay-risk: 351 95% 71%;
+    --workbench: 199 89% 48%;
   }
 }
 
 @layer base {
+  * {
+    @apply border-border;
+  }
   body {
     background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(circle at 15% 50%, hsla(var(--primary)/0.08), transparent 25%),
-      radial-gradient(circle at 85% 30%, hsla(var(--secondary)/0.08), transparent 25%);
-    background-attachment: fixed;
     color: hsl(var(--text));
     font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Custom Scrollbar for code editors and tables */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-text));
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }

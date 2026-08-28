@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { FolderPlus, FileCode2, BrainCircuit, ArrowRight, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function OnboardingModal() {
@@ -66,76 +65,75 @@ export default function OnboardingModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center items-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-surface border border-border shadow-2xl rounded-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[100] flex justify-center items-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-lg bg-surface border border-border shadow-2xl rounded-xl overflow-hidden animate-in zoom-in-95 duration-200 font-mono">
         
-        {/* Progress Bar */}
-        <div className="flex h-1.5 w-full bg-background">
+        {/* Step Progress Bar */}
+        <div className="flex h-1 w-full bg-background">
           <div className="bg-primary transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }}></div>
         </div>
 
-        <div className="p-8 pb-10">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-inner">
-              {step === 1 && <FolderPlus className="w-10 h-10 animate-in zoom-in" />}
-              {step === 2 && <FileCode2 className="w-10 h-10 animate-in zoom-in" />}
-              {step === 3 && <BrainCircuit className="w-10 h-10 animate-in zoom-in" />}
-            </div>
+        <div className="p-7">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-border">
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+              [ORIENTATION • STEP 0{step} / 03]
+            </span>
+            <span className="text-[10px] text-muted-text uppercase">SM-2 Spaced Recall</span>
           </div>
 
-          <div className="text-center space-y-3 min-h-[120px]">
+          <div className="space-y-3 min-h-[140px] text-center">
             {step === 1 && (
-              <div className="animate-in slide-in-from-right-4 duration-300">
-                <h2 className="text-2xl font-bold text-text">Welcome to CodeRecall!</h2>
-                <p className="text-muted-text mt-2 leading-relaxed">
-                  The smartest way to master LeetCode problems through spaced repetition. 
-                  Let&apos;s start by organizing your knowledge. Create a <strong className="text-text">Deck</strong> to group related problems together (e.g. &quot;Blind 75&quot; or &quot;Graphs&quot;).
+              <div className="animate-in slide-in-from-right-4 duration-200">
+                <h2 className="text-lg font-bold text-text font-sans">1. Curate Your Card Decks</h2>
+                <p className="text-muted-text text-sm mt-2 leading-relaxed max-w-md mx-auto font-sans">
+                  CodeRecall organizes algorithm patterns into dedicated <strong className="text-text font-mono">Practice Decks</strong> (such as <em>&quot;Blind 75&quot;</em>, <em>&quot;Two Pointers&quot;</em>, or <em>&quot;Meta Technical Prep&quot;</em>).
                 </p>
               </div>
             )}
             {step === 2 && (
-              <div className="animate-in slide-in-from-right-4 duration-300">
-                <h2 className="text-2xl font-bold text-text">Add your Problems</h2>
-                <p className="text-muted-text mt-2 leading-relaxed">
-                  Inside your deck, you can add problems you want to practice. 
-                  Just type the <strong className="text-primary">LeetCode URL</strong> and click &quot;Autofill&quot; — we&apos;ll automatically pull the title, difficulty, and topic tags for you!
+              <div className="animate-in slide-in-from-right-4 duration-200">
+                <h2 className="text-lg font-bold text-text font-sans">2. 1-Click Problem Autofill</h2>
+                <p className="text-muted-text text-sm mt-2 leading-relaxed max-w-md mx-auto font-sans">
+                  Add target problems individually by entering their <strong className="text-text font-mono">LeetCode ID or URL</strong>, or batch import entire study plans with automatic description &amp; tag scraping.
                 </p>
               </div>
             )}
             {step === 3 && (
-              <div className="animate-in slide-in-from-right-4 duration-300">
-                <h2 className="text-2xl font-bold text-text">Review & Grade</h2>
-                <p className="text-muted-text mt-2 leading-relaxed text-sm">
-                  When you study, you&apos;ll grade how well you remembered the solution using the SM-2 algorithm:
+              <div className="animate-in slide-in-from-right-4 duration-200">
+                <h2 className="text-lg font-bold text-text font-sans">3. Calibrated SM-2 Spaced Recall</h2>
+                <p className="text-muted-text text-xs mt-1 leading-relaxed max-w-md mx-auto font-sans">
+                  During daily study, solve in the code scratchpad and self-grade your recall quality:
                 </p>
-                <div className="flex justify-center gap-2 mt-4">
-                  {[0, 1, 2, 3, 4, 5].map((g) => (
-                    <div key={g} className="flex flex-col items-center">
-                      <span className={`w-8 h-8 rounded flex items-center justify-center text-sm font-bold shadow-sm ${
-                        g < 3 ? 'bg-danger/10 text-danger border border-danger/20' : 
-                        g < 4 ? 'bg-warning/10 text-warning border border-warning/20' : 
-                        'bg-success/10 text-success border border-success/20'
-                      }`}>{g}</span>
+                <div className="flex justify-center gap-1.5 mt-3">
+                  {[
+                    { score: 0, label: 'Blackout', color: 'text-danger bg-danger/10 border-danger/30' },
+                    { score: 1, label: 'Failed', color: 'text-danger bg-danger/10 border-danger/30' },
+                    { score: 2, label: 'Lapsed', color: 'text-warning bg-warning/10 border-warning/30' },
+                    { score: 3, label: 'Hard', color: 'text-warning bg-warning/10 border-warning/30' },
+                    { score: 4, label: 'Good', color: 'text-success bg-success/10 border-success/30' },
+                    { score: 5, label: 'Perfect', color: 'text-success bg-success/10 border-success/30' },
+                  ].map((g) => (
+                    <div key={g.score} className="flex flex-col items-center">
+                      <span className={`w-7 h-7 rounded text-xs font-bold flex items-center justify-center border ${g.color}`}>
+                        {g.score}
+                      </span>
+                      <span className="text-[9px] text-muted-text mt-0.5">{g.label}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-muted-text mt-2">
-                  0 = Total Blackout, 5 = Perfect Recall. <br /> Use keys <kbd className="bg-background px-1 rounded font-mono">0</kbd>-<kbd className="bg-background px-1 rounded font-mono">5</kbd> for quick grading!
+                <p className="text-[11px] text-muted-text mt-2">
+                  Quick keys: <kbd className="bg-background px-1 rounded border border-border">0</kbd>-<kbd className="bg-background px-1 rounded border border-border">5</kbd> • Reveal: <kbd className="bg-background px-1 rounded border border-border">Ctrl + &apos;</kbd>
                 </p>
               </div>
             )}
           </div>
 
-          <div className="mt-10 flex justify-end">
+          <div className="mt-8 pt-4 border-t border-border flex justify-end">
             <button
               onClick={nextStep}
-              className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 flex items-center gap-2 w-full justify-center"
+              className="px-5 py-2.5 rounded-lg bg-text text-background font-semibold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity shadow-sm"
             >
-              {step < 3 ? (
-                <>Continue <ArrowRight className="w-5 h-5" /></>
-              ) : (
-                <>Get Started <Check className="w-5 h-5" /></>
-              )}
+              {step === 3 ? "Complete & Open Decks ->" : "Next Step ->"}
             </button>
           </div>
         </div>
