@@ -7,10 +7,11 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 
 const MonacoEditor = dynamic(
   () => import('@monaco-editor/react').then(mod => ({ default: mod.Editor })),
-  { ssr: false, loading: () => <div className="w-full h-full bg-[#0D1117] flex items-center justify-center text-muted-text font-mono text-xs">Loading editor environment...</div> }
+  { ssr: false, loading: () => <div className="w-full h-full bg-surface flex items-center justify-center text-muted-text font-mono text-xs">Loading editor environment...</div> }
 );
 
 interface ReviewState {
@@ -79,6 +80,14 @@ function StudyContent() {
   const [globalDefaultLanguage, setGlobalDefaultLanguage] = useState('javascript');
   const [currentLanguage, setCurrentLanguage] = useState('javascript');
   const [deckName, setDeckName] = useState<string | null>(null);
+
+  // Theme synchronization for Monaco Editor
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const monacoTheme = mounted && resolvedTheme === 'light' ? 'light' : 'vs-dark';
 
   useEffect(() => {
     if (user) {
@@ -695,7 +704,7 @@ function StudyContent() {
                             height="100%"
                             defaultLanguage={currentLanguage}
                             language={currentLanguage}
-                            theme="vs-dark"
+                            theme={monacoTheme}
                             value={newSolutionCode}
                             onChange={(val) => setNewSolutionCode(val || '')}
                             options={{
@@ -802,7 +811,7 @@ function StudyContent() {
               height="100%"
               defaultLanguage={currentLanguage}
               language={currentLanguage}
-              theme="vs-dark"
+              theme={monacoTheme}
               value={scratchpadCode}
               onChange={(val) => setScratchpadCode(val || '')}
               options={{
