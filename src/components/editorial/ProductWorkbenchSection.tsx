@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Code2, ListChecks, BarChart3, CheckCircle2 } from 'lucide-react';
-import DecipherText from '@/components/motion/DecipherText';
+import { Clock, Code2, ListChecks, BarChart3 } from 'lucide-react';
 
 export default function ProductWorkbenchSection() {
   const [activeTab, setActiveTab] = useState<'queue' | 'editor' | 'stats'>('editor');
@@ -11,24 +10,10 @@ export default function ProductWorkbenchSection() {
   return (
     <section
       id="workbench"
-      className="min-h-screen relative flex flex-col justify-between py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f8f9fa] dark:bg-[#08090b] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
+      className="min-h-screen relative flex flex-col justify-center py-20 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f8f9fa] dark:bg-[#08090b] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
     >
-      {/* Top Header Index */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">004</span>
-          <span className="text-neutral-400 dark:text-neutral-600">/</span>
-          <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">
-            <DecipherText text="THE WORKBENCH" />
-          </span>
-        </div>
-        <div className="text-[11px] text-neutral-500 uppercase tracking-widest hidden sm:inline">
-          ACTUAL PRODUCT ENVIRONMENT
-        </div>
-      </div>
-
       {/* Main Section Content */}
-      <div className="max-w-7xl w-full mx-auto my-auto py-8 space-y-8">
+      <div className="max-w-7xl w-full mx-auto my-auto space-y-8">
         <div className="max-w-3xl space-y-3">
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
             Built like developer tooling. <br />
@@ -63,7 +48,7 @@ export default function ProductWorkbenchSection() {
                 }`}
               >
                 <ListChecks className="w-3.5 h-3.5" />
-                <span>1. DUE TODAY (3)</span>
+                <span>DUE TODAY (3)</span>
               </button>
               <button
                 onClick={() => setActiveTab('editor')}
@@ -74,7 +59,7 @@ export default function ProductWorkbenchSection() {
                 }`}
               >
                 <Code2 className="w-3.5 h-3.5" />
-                <span>2. ACTIVE DRILL</span>
+                <span>ACTIVE DRILL</span>
               </button>
               <button
                 onClick={() => setActiveTab('stats')}
@@ -85,7 +70,7 @@ export default function ProductWorkbenchSection() {
                 }`}
               >
                 <BarChart3 className="w-3.5 h-3.5" />
-                <span>3. RETENTION METRICS</span>
+                <span>RETENTION METRICS</span>
               </button>
             </div>
           </div>
@@ -281,12 +266,6 @@ export default function ProductWorkbenchSection() {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Bottom marker */}
-      <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between">
-        <span>004 / COMPLETE PRODUCT OPERATING SYSTEM</span>
-        <span>SCROLL FOR 005 / PATTERN MEMORY STREAM &darr;</span>
       </div>
     </section>
   );

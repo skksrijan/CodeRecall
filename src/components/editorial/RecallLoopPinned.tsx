@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Clock, Lock, CheckCircle2 } from 'lucide-react';
+import { Clock, Lock } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -56,34 +56,17 @@ export default function RecallLoopPinned() {
     <section
       id="loop"
       ref={sectionRef}
-      className="min-h-screen relative flex flex-col justify-between py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f8f9fa] dark:bg-[#08090b] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
+      className="min-h-screen relative flex flex-col justify-center py-20 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f8f9fa] dark:bg-[#08090b] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
     >
-      {/* Section Index Header */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">002</span>
-          <span className="text-neutral-400 dark:text-neutral-600">/</span>
-          <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">THE PRODUCT LOOP</span>
-        </div>
-        <div className="text-[11px] text-neutral-500 uppercase tracking-widest hidden sm:inline">
-          STATE TRANSFORMATION MACHINE
-        </div>
-      </div>
-
       {/* Pinned Split Grid */}
       <div className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center my-auto py-8">
         {/* Left Column: Context & Stepper */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="space-y-2">
-            <div className="text-xs font-mono text-emerald-600 dark:text-emerald-400 tracking-widest uppercase font-bold">
-              [ WORKBENCH ENGINE ]
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-[1.08]">
-              One problem. <br />
-              Four cognitive <br />
-              <span className="text-emerald-600 dark:text-emerald-400">stages.</span>
-            </h2>
-          </div>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-[1.08]">
+            One problem. <br />
+            Four cognitive <br />
+            <span className="text-emerald-600 dark:text-emerald-400">stages.</span>
+          </h2>
 
           <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed font-normal">
             The same central workbench continuously evolves as you scroll — demonstrating how CodeRecall turns fleeting solution memory into permanent algorithmic intuition.
@@ -92,10 +75,10 @@ export default function RecallLoopPinned() {
           {/* Stepper Progress Indicator */}
           <div className="space-y-3 font-mono text-xs pt-2">
             {[
-              { id: 'solve', label: '01 / SOLVE', desc: 'First encounter & initial pattern implementation' },
-              { id: 'forget', label: '02 / FORGET', desc: 'Synaptic decay begins over days of non-exposure' },
-              { id: 'recall', label: '03 / RECALL', desc: 'Prompted test with hidden code & paced stopwatch' },
-              { id: 'schedule', label: '04 / SCHEDULE', desc: 'SM-2 computes personalized exponential interval' },
+              { id: 'solve', label: 'SOLVE', desc: 'First encounter & initial pattern implementation' },
+              { id: 'forget', label: 'FORGET', desc: 'Synaptic decay begins over days of non-exposure' },
+              { id: 'recall', label: 'RECALL', desc: 'Prompted test with hidden code & paced stopwatch' },
+              { id: 'schedule', label: 'SCHEDULE', desc: 'SM-2 computes personalized exponential interval' },
             ].map((st) => {
               const isCurrent = activeStep === st.id;
               return (
@@ -246,16 +229,10 @@ export default function RecallLoopPinned() {
             {/* Bottom Card Footer */}
             <div className="flex items-center justify-between border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500">
               <span>ALGORITHM: SUPERMEMO SM-2</span>
-              <span>SCROLL TO ADVANCE TO 003 / SCHEDULER &darr;</span>
+              <span>COGNITIVE ENGINE</span>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Bottom marker */}
-      <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between">
-        <span>002 / RECALL ENGINE WORKSPACE</span>
-        <span>SCROLL DOWN TO GROW THE EXPONENTIAL TIMELINE &darr;</span>
       </div>
     </section>
   );

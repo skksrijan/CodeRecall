@@ -79,10 +79,13 @@ export default function ConcentricRingCanvas() {
   // Animation state references
   const animFrameRef = useRef<number | null>(null);
   const anglesRef = useRef<number[]>(RINGS_DATA.map(() => 0));
-  const waveTimeRef = useRef<number>(0);
-  const waveIntensityRef = useRef<number>(0);
   const mousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isHoldingRef = useRef<boolean>(false);
+
+  // Inward Collapse & Release Ripple Physics state
+  const collapseRef = useRef<number>(0); // 0 (normal) -> 1 (fully collapsed)
+  const releaseTimeRef = useRef<number>(-999); // timestamp of release
+  const releaseImpulseRef = useRef<number>(0); // energy captured on release
 
   const handlePointerDown = useCallback(() => {
     isHoldingRef.current = true;
@@ -90,8 +93,13 @@ export default function ConcentricRingCanvas() {
   }, []);
 
   const handlePointerUp = useCallback(() => {
-    isHoldingRef.current = false;
-    setIsHolding(false);
+    if (isHoldingRef.current) {
+      // Capture stored energy and trigger outward ripple
+      releaseImpulseRef.current = Math.max(0.2, collapseRef.current);
+      releaseTimeRef.current = performance.now();
+      isHoldingRef.current = false;
+      setIsHolding(false);
+    }
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -131,28 +139,38 @@ export default function ConcentricRingCanvas() {
 
     // Render loop
     const render = (time: number) => {
-      // Check if dark mode is active on document
       const isDark = document.documentElement.classList.contains('dark');
-
       ctx.clearRect(0, 0, width, height);
 
       const cx = width / 2;
       const cy = height / 2;
 
-      // Update wave intensity
+      // 1. Update Inward Collapse Physics
       if (isHoldingRef.current) {
-        waveIntensityRef.current = Math.min(waveIntensityRef.current + 0.08, 1);
-        waveTimeRef.current += 0.08;
+        // Smooth asymptotic inward contraction
+        collapseRef.current += (1 - collapseRef.current) * 0.045;
       } else {
-        waveIntensityRef.current = Math.max(waveIntensityRef.current - 0.03, 0);
-        waveTimeRef.current += 0.02;
+        // Smooth return to resting radius
+        collapseRef.current += (0 - collapseRef.current) * 0.1;
+      }
+
+      // 2. Update Outward Release Ripple Physics
+      const timeSinceRelease = (performance.now() - releaseTimeRef.current) / 1000;
+      let rippleAmp = 0;
+      if (timeSinceRelease >= 0 && timeSinceRelease < 2.5) {
+        // Damped harmonic decay envelope
+        const decay = Math.exp(-timeSinceRelease * 2.2);
+        rippleAmp = releaseImpulseRef.current * 22 * decay;
       }
 
       // Draw background ambient concentric guide circles
       RINGS_DATA.forEach((ring, idx) => {
-        const baseRadius = (ring.radius / 360) * (width * 0.46);
+        const nominalRadius = (ring.radius / 360) * (width * 0.46);
+        // Apply collapse inward contraction (up to 35% contraction)
+        const currentRadius = nominalRadius * (1 - collapseRef.current * 0.35);
+
         ctx.beginPath();
-        ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
+        ctx.arc(cx, cy, Math.max(10, currentRadius), 0, Math.PI * 2);
         ctx.strokeStyle = isDark
           ? `rgba(255, 255, 255, ${0.03 + (idx % 2 === 0 ? 0.02 : 0)})`
           : `rgba(0, 0, 0, ${0.04 + (idx % 2 === 0 ? 0.02 : 0)})`;
@@ -162,37 +180,49 @@ export default function ConcentricRingCanvas() {
         ctx.setLineDash([]);
       });
 
-      // Draw active ripple rings if holding
-      if (waveIntensityRef.current > 0.01) {
-        const rippleCount = 3;
-        for (let i = 0; i < rippleCount; i++) {
-          const progress = ((waveTimeRef.current * 0.5 + i / rippleCount) % 1);
-          const rippleRadius = progress * (width * 0.48);
-          const alpha = (1 - progress) * 0.35 * waveIntensityRef.current;
+      // Draw expanding visual wave rings on release
+      if (rippleAmp > 0.5) {
+        const waveCount = 3;
+        for (let i = 0; i < waveCount; i++) {
+          const waveProgress = ((timeSinceRelease * 1.6 + i * 0.3) % 1.5) / 1.5;
+          const waveRadius = waveProgress * (width * 0.48);
+          const alpha = (1 - waveProgress) * (rippleAmp / 22) * 0.4;
 
           ctx.beginPath();
-          ctx.arc(cx, cy, rippleRadius, 0, Math.PI * 2);
+          ctx.arc(cx, cy, waveRadius, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
-          ctx.lineWidth = 1.5 + (1 - progress) * 2;
+          ctx.lineWidth = 1.5 + (1 - waveProgress) * 2;
           ctx.stroke();
         }
       }
 
-      // Draw concentric rotating text
+      // Draw concentric rotating text with dynamic inward collapse + release ripple physics
       RINGS_DATA.forEach((ring, idx) => {
-        // Update angle
-        anglesRef.current[idx] += ring.speed * ring.direction;
+        // Angular acceleration on collapse (conservation of angular momentum)
+        const speedBoost = 1 + collapseRef.current * 1.5;
+        anglesRef.current[idx] += ring.speed * ring.direction * speedBoost;
         const currentAngle = anglesRef.current[idx];
 
-        const baseRadius = (ring.radius / 360) * (width * 0.46);
+        const nominalRadius = (ring.radius / 360) * (width * 0.46);
+        // Inward collapse contraction
+        const collapsedBaseRadius = nominalRadius * (1 - collapseRef.current * 0.35);
+
+        // Harmonic outward ripple oscillation upon release
+        let waveDisplacement = 0;
+        if (rippleAmp > 0.01) {
+          const waveFreq = 0.04;
+          const waveSpeed = 16;
+          waveDisplacement = Math.sin(nominalRadius * waveFreq - timeSinceRelease * waveSpeed) * rippleAmp;
+        }
+
+        const baseRadius = Math.max(15, collapsedBaseRadius + waveDisplacement);
         const text = ring.text;
         const fontSize = Math.max(8, (ring.fontSize / 360) * (width * 0.46));
-        
+
         ctx.font = `bold ${fontSize}px var(--font-geist-mono), monospace`;
         ctx.textBaseline = 'middle';
         ctx.textAlign = 'center';
 
-        // Calculate total text length on circumference
         const chars = text.split('');
         const charStep = (Math.PI * 2) / chars.length;
 
@@ -200,29 +230,19 @@ export default function ConcentricRingCanvas() {
           const char = chars[i];
           const charAngle = currentAngle + i * charStep;
 
-          // Wave radial displacement calculation
-          let displacement = 0;
-          if (waveIntensityRef.current > 0.001) {
-            // Harmonic wave from center outward
-            const waveFrequency = 0.04;
-            const waveSpeed = 8;
-            const waveAmp = 14 * waveIntensityRef.current;
-            displacement = Math.sin(baseRadius * waveFrequency - waveTimeRef.current * waveSpeed) * waveAmp;
-          }
-
-          // Subtle cursor magnetic displacement
-          const charX = cx + Math.cos(charAngle) * (baseRadius + displacement);
-          const charY = cy + Math.sin(charAngle) * (baseRadius + displacement);
+          // Mouse proximity influence
+          const charX = cx + Math.cos(charAngle) * baseRadius;
+          const charY = cy + Math.sin(charAngle) * baseRadius;
           const dx = charX - (cx + mousePosRef.current.x);
           const dy = charY - (cy + mousePosRef.current.y);
           const distToMouse = Math.sqrt(dx * dx + dy * dy);
 
           let mouseInfluence = 0;
-          if (distToMouse < 90) {
-            mouseInfluence = (1 - distToMouse / 90) * 8;
+          if (distToMouse < 80) {
+            mouseInfluence = (1 - distToMouse / 80) * 6;
           }
 
-          const finalRadius = baseRadius + displacement + mouseInfluence;
+          const finalRadius = baseRadius + mouseInfluence;
           const x = cx + Math.cos(charAngle) * finalRadius;
           const y = cy + Math.sin(charAngle) * finalRadius;
 
@@ -230,8 +250,8 @@ export default function ConcentricRingCanvas() {
           ctx.translate(x, y);
           ctx.rotate(charAngle + Math.PI / 2);
 
-          // Color calculation: brighter on emerald wave, crisp in light/dark
-          if (waveIntensityRef.current > 0.1 && Math.abs(displacement) > 4) {
+          // Color calculation: glow bright emerald on ripple / collapse
+          if (Math.abs(waveDisplacement) > 3 || collapseRef.current > 0.3) {
             ctx.fillStyle = isDark ? '#34d399' : '#059669';
           } else if (idx === 0) {
             ctx.fillStyle = isDark ? '#10b981' : '#059669';
@@ -249,15 +269,17 @@ export default function ConcentricRingCanvas() {
       // Draw Center Core Node
       ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+      // Center node contracts & intensifies during hold
+      const coreSize = 14 + collapseRef.current * 6;
+      ctx.arc(cx, cy, coreSize, 0, Math.PI * 2);
       ctx.fillStyle = isDark ? '#08090b' : '#f8f9fa';
       ctx.fill();
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = collapseRef.current > 0.1 ? '#34d399' : '#10b981';
+      ctx.lineWidth = 2 + collapseRef.current * 2;
       ctx.stroke();
 
       // Pulsing core dot
-      const pulseSize = 4 + (Math.sin(time * 0.005) + 1) * 2;
+      const pulseSize = (4 + (Math.sin(time * 0.006) + 1) * 2) * (1 + collapseRef.current);
       ctx.beginPath();
       ctx.arc(cx, cy, pulseSize, 0, Math.PI * 2);
       ctx.fillStyle = isHoldingRef.current ? '#34d399' : '#10b981';
@@ -289,27 +311,17 @@ export default function ConcentricRingCanvas() {
       onPointerEnter={() => setHovered(true)}
       onPointerMove={handlePointerMove}
       className="relative w-full aspect-square max-w-[620px] mx-auto flex items-center justify-center cursor-grab active:cursor-grabbing select-none group"
-      title="Click and hold to emit active memory recall waves"
+      title="Hold with mouse to collapse; release to fire harmonic ripples"
     >
       {/* Background glow when holding */}
       <div
-        className={`absolute inset-0 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 blur-3xl transition-opacity duration-300 pointer-events-none ${
-          isHolding ? 'opacity-100 scale-105' : hovered ? 'opacity-60 scale-100' : 'opacity-20 scale-95'
+        className={`absolute inset-0 rounded-full bg-emerald-500/15 dark:bg-emerald-500/10 blur-3xl transition-all duration-300 pointer-events-none ${
+          isHolding ? 'opacity-100 scale-110' : hovered ? 'opacity-60 scale-100' : 'opacity-20 scale-95'
         }`}
       />
 
       {/* Main interactive canvas */}
       <canvas ref={canvasRef} className="relative z-10 w-full h-full block" />
-
-      {/* Floating Bottom Prompt Badge */}
-      <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 z-20 font-mono text-[10px] px-2.5 py-1 rounded bg-white/80 dark:bg-black/80 backdrop-blur-md border border-neutral-200 dark:border-white/15 text-neutral-700 dark:text-neutral-300 shadow-lg flex items-center gap-1.5 pointer-events-none transition-all">
-        <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            isHolding ? 'bg-emerald-500 animate-ping' : 'bg-emerald-500'
-          }`}
-        />
-        <span>{isHolding ? 'RECALL WAVE ACTIVE • 60FPS' : 'CLICK & HOLD TO EMIT WAVE'}</span>
-      </div>
     </div>
   );
 }

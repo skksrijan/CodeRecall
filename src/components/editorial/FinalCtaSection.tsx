@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import AnimatedForgettingCurve from './AnimatedForgettingCurve';
 
 export default function FinalCtaSection() {
   const { user } = useAuth();
@@ -12,43 +13,8 @@ export default function FinalCtaSection() {
         {/* Subtle grid in background */}
         <div className="absolute inset-0 bg-tech-grid opacity-30 pointer-events-none" />
 
-        {/* Visual callback to stabilized curve */}
-        <div className="max-w-2xl mx-auto space-y-3 font-mono text-xs">
-          <div className="text-[10px] text-neutral-500 uppercase tracking-widest">
-            [ FINAL EQUILIBRIUM: REPEATED CONSOLIDATION ]
-          </div>
-
-          <div className="h-28 w-full relative">
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 600 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Reference Grid */}
-              <line x1="30" y1="20" x2="570" y2="20" stroke="currentColor" className="text-neutral-200 dark:text-white/5" strokeDasharray="3 3" />
-              <line x1="30" y1="80" x2="570" y2="80" stroke="currentColor" className="text-neutral-300 dark:text-white/15" />
-
-              {/* Stabilizing Curve Spikes */}
-              <path
-                d="M 30 25 Q 90 70, 130 80 L 130 25 Q 220 60, 270 70 L 270 24 Q 380 40, 430 45 L 430 22 L 570 22"
-                stroke="#10b981"
-                strokeWidth="2.5"
-                fill="none"
-              />
-
-              {/* Recall Markers */}
-              <circle cx="130" cy="25" r="3.5" className="fill-emerald-500" />
-              <circle cx="270" cy="24" r="3.5" className="fill-emerald-500" />
-              <circle cx="430" cy="22" r="3.5" className="fill-emerald-500" />
-              <circle cx="570" cy="22" r="4.5" className="fill-emerald-500 stroke-neutral-900 dark:stroke-white stroke-1" />
-
-              <text x="490" y="42" className="fill-emerald-600 dark:fill-emerald-400 text-[11px] font-mono font-bold">
-                RETAINED.
-              </text>
-            </svg>
-          </div>
-        </div>
+        {/* Live Scroll-Driven Animated Forgetting & Stabilization Curve */}
+        <AnimatedForgettingCurve />
 
         {/* Big Editorial Statement */}
         <div className="space-y-4 max-w-3xl mx-auto">

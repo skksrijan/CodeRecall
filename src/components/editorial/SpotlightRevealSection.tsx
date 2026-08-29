@@ -61,7 +61,7 @@ export default function SpotlightRevealSection() {
       onMouseMove={isDark ? handleMouseMove : undefined}
       onMouseEnter={isDark ? () => setIsHovering(true) : undefined}
       onMouseLeave={isDark ? () => setIsHovering(false) : undefined}
-      className={`min-h-screen relative flex flex-col justify-between py-20 px-4 sm:px-6 lg:px-8 bg-[#f8f9fa] dark:bg-[#050608] text-neutral-900 dark:text-white overflow-hidden border-b border-neutral-200 dark:border-white/10 transition-colors duration-300 ${
+      className={`min-h-[85vh] relative flex flex-col justify-center py-24 px-4 sm:px-6 lg:px-8 bg-[#f8f9fa] dark:bg-[#050608] text-neutral-900 dark:text-white overflow-hidden border-b border-neutral-200 dark:border-white/10 transition-colors duration-300 ${
         isDark ? 'select-none' : 'bg-tech-grid'
       }`}
     >
@@ -87,85 +87,29 @@ export default function SpotlightRevealSection() {
           >
             {DENSE_BACKGROUND_CODE_MATRIX}
           </div>
-
-          {/* Floating Badge Indicator */}
-          {!isTouchDevice && isHovering && (
-            <div
-              className="absolute pointer-events-none z-30 font-mono text-[10px] px-2 py-0.5 rounded bg-emerald-500 text-black font-bold shadow-lg transition-transform duration-75 flex items-center gap-1"
-              style={{
-                left: `${mousePos.x + 14}px`,
-                top: `${mousePos.y + 14}px`,
-              }}
-            >
-              <span>REVEAL</span>
-            </div>
-          )}
         </>
       )}
 
-      {/* Top Header Index */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400 relative z-10">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">002</span>
-          <span className="text-neutral-400 dark:text-neutral-600">/</span>
-          <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">PRE-INDEXED ARCHITECTURE</span>
-        </div>
-        <div className="text-[11px] text-neutral-500 uppercase tracking-widest hidden sm:inline">
-          {isDark ? 'HOVER MOUSE TO ILLUMINATE UNDERLYING CODEBASE' : 'COMPILED ALGORITHMIC BLUEPRINT'}
-        </div>
-      </div>
-
       {/* Main Big Editorial Statement */}
-      <div className="max-w-6xl w-full mx-auto my-auto py-12 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        <div className="lg:col-span-8 space-y-6">
-          <h2 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-[1.04]">
-            Every pattern already indexed. <br />
-            <span className="text-emerald-600 dark:text-emerald-400">So you can skip to the actual retention.</span>
-          </h2>
+      <div className="max-w-5xl w-full mx-auto my-auto relative z-10 space-y-8">
+        <h2 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-neutral-900 dark:text-white leading-[1.04]">
+          Every pattern already indexed. <br />
+          <span className="text-emerald-600 dark:text-emerald-400">So you can skip to the actual retention.</span>
+        </h2>
 
-          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-300 max-w-2xl leading-relaxed font-normal">
-            The mathematical foundation under your interview prep: 150+ canonical problem structures, SM-2 decay calculations, scratchpad execution, and review queues — built once and committed. 
-          </p>
+        <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-300 max-w-2xl leading-relaxed font-normal">
+          The mathematical foundation under your interview prep: 150+ canonical problem structures, SM-2 decay calculations, scratchpad execution, and review queues — built once and committed. 
+        </p>
 
-          <div className="pt-2 flex flex-wrap gap-4 font-mono text-xs">
-            <Link
-              href="/signup"
-              className="px-6 py-3.5 rounded-sm bg-neutral-900 text-white dark:bg-white dark:text-black font-bold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all flex items-center gap-2 group shadow-xl"
-            >
-              <span>Initialize Your Deck</span>
-              <ArrowUpRight className="w-4 h-4 text-emerald-400 dark:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </Link>
-          </div>
+        <div className="pt-2 flex flex-wrap gap-4 font-mono text-xs">
+          <Link
+            href="/signup"
+            className="px-6 py-3.5 rounded-sm bg-neutral-900 text-white dark:bg-white dark:text-black font-bold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all flex items-center gap-2 group shadow-xl"
+          >
+            <span>Initialize Your Deck</span>
+            <ArrowUpRight className="w-4 h-4 text-emerald-400 dark:text-emerald-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </Link>
         </div>
-
-        {/* Right side callout box */}
-        <div className="lg:col-span-4 tech-card bg-white dark:bg-black/70 backdrop-blur-md rounded-lg p-6 border-neutral-200 dark:border-white/15 space-y-4 font-mono text-xs shadow-xl">
-          <div className="flex justify-between items-center border-b border-neutral-200 dark:border-white/10 pb-2">
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">001 / PATTERN-NATIVE</span>
-            <span className="text-[10px] text-neutral-500">AUTO-PACED</span>
-          </div>
-
-          <p className="text-neutral-700 dark:text-neutral-300 text-xs leading-relaxed font-sans font-normal">
-            Pre-compiled mental models for Two Pointers, Monotonic Stacks, and Tree DFS load before your first drill, so you test intuition instead of grinding endlessly.
-          </p>
-
-          <div className="border-t border-neutral-200 dark:border-white/10 pt-3 space-y-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-            <div className="flex justify-between">
-              <span>LATENCY:</span>
-              <span className="text-neutral-900 dark:text-white font-bold">&lt; 10ms (IndexedDB)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>DAILY TARGET:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">3 Drills (~15 min)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom marker */}
-      <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between relative z-10">
-        <span>002 / {isDark ? 'SPOTLIGHT MEMORY MATRIX' : 'ALGORITHMIC BLUEPRINT'}</span>
-        <span>SCROLL FOR 003 / RECALL WORKBENCH &darr;</span>
       </div>
     </section>
   );

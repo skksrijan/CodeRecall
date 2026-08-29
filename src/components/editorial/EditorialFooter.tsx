@@ -28,19 +28,19 @@ export default function EditorialFooter() {
             <span className="text-neutral-600 dark:text-neutral-400">SM-2 ACTIVE RECALL SYSTEM</span>
           </div>
 
-          {/* Navigation Links with DecipherText */}
+          {/* Navigation Links with DecipherText (No Number Prefixes) */}
           <nav className="flex flex-wrap items-center justify-center gap-6 uppercase tracking-wider text-[11px]">
             <a href="#patterns" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-              <DecipherText text="01.Patterns" />
+              <DecipherText text="Patterns" />
             </a>
             <a href="#loop" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-              <DecipherText text="02.Loop" />
+              <DecipherText text="Loop" />
             </a>
             <a href="#workbench" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-              <DecipherText text="03.Workbench" />
+              <DecipherText text="Workbench" />
             </a>
             <a href="#faq" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-              <DecipherText text="04.FAQ" />
+              <DecipherText text="FAQ" />
             </a>
             <Link href="/login" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
               <DecipherText text="Sign In" />

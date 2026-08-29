@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -85,56 +86,74 @@ const PATTERNS = [
 
 export default function PatternHorizontalScroll() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (isReduced) return;
+    // Delay initialization slightly to allow DOM layout & fonts to measure accurately
+    const timer = setTimeout(() => {
+      const ctx = gsap.context(() => {
+        const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const isMobile = window.innerWidth < 768;
+        if (isReduced || isMobile) return;
 
-      const track = trackRef.current;
-      if (!track) return;
+        const track = trackRef.current;
+        const section = sectionRef.current;
+        if (!track || !section) return;
 
-      const totalScroll = track.scrollWidth - window.innerWidth + 120;
+        const getScrollDistance = () => {
+          return track.scrollWidth - window.innerWidth + 140;
+        };
 
-      gsap.to(track, {
-        x: () => -totalScroll,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: () => `+=${totalScroll * 1.2}`,
-          pin: true,
-          scrub: 0.8,
-          invalidateOnRefresh: true,
-        },
-      });
-    }, sectionRef);
+        const tween = gsap.to(track, {
+          x: () => -getScrollDistance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: 'top top',
+            end: () => `+=${getScrollDistance() * 1.2}`,
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+            anticipatePin: 1,
+          },
+        });
 
-    return () => ctx.revert();
+        // Trigger refresh
+        ScrollTrigger.refresh();
+
+        return () => {
+          tween.kill();
+        };
+      }, sectionRef);
+
+      return () => ctx.revert();
+    }, 150);
+
+    return () => clearTimeout(timer);
   }, []);
+
+  const scrollLeft = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollBy({ left: -380, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollBy({ left: 380, behavior: 'smooth' });
+    }
+  };
 
   return (
     <section
       id="patterns"
       ref={sectionRef}
-      className="min-h-screen relative flex flex-col justify-between py-16 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f4f5f7] dark:bg-[#0a0c10] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
+      className="min-h-screen relative flex flex-col justify-center py-20 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f4f5f7] dark:bg-[#0a0c10] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
     >
-      {/* Top Header Index */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">005</span>
-          <span className="text-neutral-400 dark:text-neutral-600">/</span>
-          <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">THE PATTERNS YOU KEEP</span>
-        </div>
-        <div className="text-[11px] text-neutral-500 uppercase tracking-widest hidden sm:inline">
-          HORIZONTAL MEMORY CATALOG [SCROLL VERTICALLY TO NAVIGATE]
-        </div>
-      </div>
-
-      {/* Horizontal Scrolling Track */}
-      <div className="w-full my-auto py-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto mb-6">
+      {/* Header & Controls */}
+      <div className="max-w-7xl w-full mx-auto mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
             Moving through your algorithmic memory.
           </h2>
@@ -143,11 +162,36 @@ export default function PatternHorizontalScroll() {
           </p>
         </div>
 
-        <div ref={trackRef} className="flex gap-6 pl-4 sm:pl-8 select-none w-max">
+        {/* Quick Horizontal Nav Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={scrollLeft}
+            className="p-2.5 rounded border border-neutral-300 dark:border-white/15 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:border-neutral-400 dark:hover:border-white/30 transition-all shadow-xs"
+            aria-label="Scroll patterns left"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={scrollRight}
+            className="p-2.5 rounded border border-neutral-300 dark:border-white/15 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:border-neutral-400 dark:hover:border-white/30 transition-all shadow-xs"
+            aria-label="Scroll patterns right"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Horizontal Scrolling Track Container */}
+      <div
+        ref={containerRef}
+        className="w-full overflow-x-auto overflow-y-hidden no-scrollbar py-4"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        <div ref={trackRef} className="flex gap-6 pl-2 sm:pl-4 select-none w-max">
           {PATTERNS.map((p) => (
             <div
               key={p.num}
-              className="w-80 sm:w-96 tech-card rounded-lg p-6 space-y-6 shrink-0 shadow-2xl font-mono text-xs flex flex-col justify-between border-neutral-200 dark:border-white/10 hover:border-emerald-500/40 transition-colors group"
+              className="w-80 sm:w-96 tech-card rounded-lg p-6 space-y-6 shrink-0 shadow-2xl font-mono text-xs flex flex-col justify-between border border-neutral-200 dark:border-white/10 hover:border-emerald-500/40 transition-colors group bg-white dark:bg-[#08090b]"
             >
               <div className="flex justify-between items-start border-b border-neutral-200 dark:border-white/10 pb-3">
                 <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">{p.num}</span>
@@ -183,12 +227,6 @@ export default function PatternHorizontalScroll() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Bottom marker */}
-      <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between">
-        <span>005 / PINNED HORIZONTAL PATTERN STREAM</span>
-        <span>SCROLL FOR 006 / PRODUCT WORKBENCH &darr;</span>
       </div>
     </section>
   );

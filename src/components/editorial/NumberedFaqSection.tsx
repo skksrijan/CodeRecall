@@ -41,22 +41,10 @@ export default function NumberedFaqSection() {
   return (
     <section
       id="faq"
-      className="min-h-screen relative flex flex-col justify-between py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f4f5f7] dark:bg-[#0a0c10] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
+      className="min-h-screen relative flex flex-col justify-center py-20 px-4 sm:px-6 lg:px-8 border-b border-neutral-200 dark:border-white/10 bg-[#f4f5f7] dark:bg-[#0a0c10] text-neutral-900 dark:text-neutral-100 bg-tech-grid overflow-hidden transition-colors"
     >
-      {/* Top Header Index */}
-      <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-        <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">006</span>
-          <span className="text-neutral-400 dark:text-neutral-600">/</span>
-          <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">FREQUENTLY ASKED QUESTIONS</span>
-        </div>
-        <div className="text-[11px] text-neutral-500 uppercase tracking-widest hidden sm:inline">
-          NUMBERED TECHNICAL SPECIFICATION
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="max-w-4xl w-full mx-auto my-auto py-8 space-y-8">
+      <div className="max-w-4xl w-full mx-auto my-auto space-y-8">
         <div className="space-y-3">
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
             Architecture and methodology.
@@ -111,12 +99,6 @@ export default function NumberedFaqSection() {
             );
           })}
         </div>
-      </div>
-
-      {/* Bottom marker */}
-      <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between">
-        <span>006 / SPECIFICATION VERIFICATION</span>
-        <span>SCROLL FOR 007 / FINAL DIRECTIVE &darr;</span>
       </div>
     </section>
   );
