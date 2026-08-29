@@ -20,8 +20,11 @@ export default function ImportModal({ isOpen, onClose, onImported, token, decks 
   const popularShortcuts = [
     { label: 'Blind 75', value: 'blind-75' },
     { label: 'Top 150', value: 'top-interview-150' },
+    { label: 'NeetCode 250', value: 'neetcode-250' },
     { label: 'LeetCode 75', value: 'leetcode-75' },
     { label: 'Top 100 Liked', value: 'top-100-liked' },
+    { label: 'SQL 50', value: 'top-sql-50' },
+    { label: 'JS 30', value: '30-days-of-javascript' },
   ];
 
   const handleImport = async (e: React.FormEvent) => {
