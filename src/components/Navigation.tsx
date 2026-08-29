@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from 'next-themes';
 import { Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import DecipherText from '@/components/motion/DecipherText';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -59,7 +60,7 @@ export default function Navigation() {
           <div className="flex items-center space-x-8">
             <Link href="/app/dashboard" className="flex items-center gap-2 group">
               <span className="text-lg font-bold tracking-tight text-text font-mono">
-                CodeRecall
+                <DecipherText text="CodeRecall" />
               </span>
             </Link>
             <div className="hidden md:flex space-x-1 font-mono text-xs">
@@ -74,7 +75,7 @@ export default function Navigation() {
                         : 'text-muted-text hover:text-text hover:bg-background'
                       }`}
                   >
-                    <span>{link.label}</span>
+                    <DecipherText text={link.label} />
                     {link.href === '/app/study' && dueCount !== null && dueCount > 0 && (
                       <span className={`tabular-nums text-[10px] font-mono font-bold px-1.5 py-0.2 rounded ${isActive
                           ? 'bg-background text-text'
@@ -96,7 +97,7 @@ export default function Navigation() {
                   className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-border bg-background text-muted-text hover:text-text hover:border-text/40 transition-all text-xs font-mono"
                   aria-label="Search"
                 >
-                  <span>SEARCH</span>
+                  <DecipherText text="SEARCH" />
                   <kbd className="inline-flex items-center font-mono text-[10px] bg-surface px-1 py-0.2 rounded border border-border">
                     ⌘K
                   </kbd>
@@ -117,7 +118,7 @@ export default function Navigation() {
                 className="px-2 py-1 rounded-md text-muted-text hover:text-text hover:bg-background border border-transparent hover:border-border transition-colors uppercase tracking-wider text-[11px]"
                 aria-label="Settings"
               >
-                SETTINGS
+                <DecipherText text="SETTINGS" />
               </Link>
               <span className="text-xs font-mono text-muted-text hidden sm:block truncate max-w-[130px]">
                 {user?.displayName || user?.email}
@@ -126,7 +127,7 @@ export default function Navigation() {
                 onClick={signOut}
                 className="text-xs font-medium text-muted-text hover:text-danger px-2 py-1 rounded transition-colors uppercase tracking-wider text-[11px]"
               >
-                SIGN OUT
+                <DecipherText text="SIGN OUT" />
               </button>
             </div>
           </div>

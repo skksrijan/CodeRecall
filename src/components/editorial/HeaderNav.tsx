@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
+import DecipherText from '@/components/motion/DecipherText';
 
 export default function HeaderNav() {
   const { user } = useAuth();
@@ -29,23 +30,23 @@ export default function HeaderNav() {
               CR
             </div>
             <span className="font-bold tracking-wider hidden sm:inline text-xs text-neutral-900 dark:text-white">
-              CODERECALL
+              <DecipherText text="CODERECALL" />
             </span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links with Cryptic Decipher Hover Effect */}
           <nav className="flex items-center space-x-2 sm:space-x-3 text-neutral-600 dark:text-neutral-300 uppercase tracking-wider text-[10px] sm:text-[11px]">
             <a href="#patterns" className="hover:text-neutral-950 dark:hover:text-white transition-colors">
-              PATTERNS
+              <DecipherText text="PATTERNS" />
             </a>
             <a href="#loop" className="hover:text-neutral-950 dark:hover:text-white transition-colors hidden xs:inline">
-              LOOP
+              <DecipherText text="LOOP" />
             </a>
             <a href="#workbench" className="hover:text-neutral-950 dark:hover:text-white transition-colors">
-              WORKBENCH
+              <DecipherText text="WORKBENCH" />
             </a>
             <a href="#faq" className="hover:text-neutral-950 dark:hover:text-white transition-colors hidden sm:inline">
-              FAQ
+              <DecipherText text="FAQ" />
             </a>
           </nav>
 
@@ -72,7 +73,7 @@ export default function HeaderNav() {
                 href="/app/dashboard"
                 className="px-2.5 py-1 rounded-xs bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black font-bold uppercase tracking-wider hover:bg-emerald-700 dark:hover:bg-emerald-400 transition-all text-[10px] flex items-center gap-1 shadow-sm"
               >
-                <span>WORKBENCH</span>
+                <DecipherText text="WORKBENCH" />
                 <span>&rarr;</span>
               </Link>
             ) : (
@@ -81,7 +82,7 @@ export default function HeaderNav() {
                 className="px-2.5 py-1 rounded-xs bg-neutral-900 text-white dark:bg-white dark:text-black font-bold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all text-[10px] flex items-center gap-1.5 shadow-sm group"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:animate-ping shrink-0" />
-                <span>GET ACCESS</span>
+                <DecipherText text="GET ACCESS" />
               </Link>
             )}
           </div>

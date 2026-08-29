@@ -10,6 +10,7 @@ import PatternHorizontalScroll from '@/components/editorial/PatternHorizontalScr
 import NumberedFaqSection from '@/components/editorial/NumberedFaqSection';
 import FinalCtaSection from '@/components/editorial/FinalCtaSection';
 import EditorialFooter from '@/components/editorial/EditorialFooter';
+import BackToTopButton from '@/components/editorial/BackToTopButton';
 
 export default function HomePage() {
   return (
@@ -41,6 +42,9 @@ export default function HomePage() {
 
         {/* 8. Editorial Footer */}
         <EditorialFooter />
+
+        {/* Floating Quick Return to Top Button */}
+        <BackToTopButton />
       </div>
     </SmoothScrollProvider>
   );
