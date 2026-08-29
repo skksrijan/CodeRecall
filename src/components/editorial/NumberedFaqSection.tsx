@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, ChevronRight, ArrowUpRight } from 'lucide-react';
 
 const FAQS = [
   {
@@ -24,21 +25,9 @@ const FAQS = [
   },
   {
     num: 'Q.004',
-    question: 'How do I import problems from LeetCode or personal notes?',
-    answer:
-      'You can paste any LeetCode problem URL to automatically pull description, tags, constraints, and test suites. You can also import markdown decks or curated curriculum lists with a single click.',
-  },
-  {
-    num: 'Q.005',
     question: 'What happens if I fail a recall drill?',
     answer:
       'If your recall score is 0 or 1, the SM-2 engine detects synaptic decay and resets the problem interval back to Day 1, scheduling an immediate review drill within 24 hours to re-anchor the pattern.',
-  },
-  {
-    num: 'Q.006',
-    question: 'Can I use CodeRecall offline or on mobile devices?',
-    answer:
-      'Yes. The application uses client-side state caching with IndexedDB, allowing you to review and drill your active queue even without internet connectivity.',
   },
 ];
 
@@ -57,7 +46,7 @@ export default function NumberedFaqSection() {
       {/* Top Header Index */}
       <div className="max-w-7xl w-full mx-auto flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
         <div className="flex items-center gap-2">
-          <span className="text-emerald-600 dark:text-emerald-400 font-bold">011</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">006</span>
           <span className="text-neutral-400 dark:text-neutral-600">/</span>
           <span className="text-neutral-900 dark:text-white uppercase tracking-wider font-bold">FREQUENTLY ASKED QUESTIONS</span>
         </div>
@@ -73,7 +62,7 @@ export default function NumberedFaqSection() {
             Architecture and methodology.
           </h2>
           <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 font-normal leading-relaxed">
-            Detailed answers on memory curves, time commitments, and LeetCode intake mechanics.
+            Concise answers on memory curves, time commitments, and LeetCode intake mechanics.
           </p>
         </div>
 
@@ -84,7 +73,7 @@ export default function NumberedFaqSection() {
             return (
               <div
                 key={faq.num}
-                className="tech-card rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10 shadow-md transition-colors"
+                className="tech-card rounded-lg overflow-hidden border border-neutral-200 dark:border-white/10 shadow-xs transition-colors"
               >
                 <button
                   onClick={() => toggle(faq.num)}
@@ -106,8 +95,15 @@ export default function NumberedFaqSection() {
                 {isOpen && (
                   <div className="p-4 sm:p-5 pt-0 border-t border-neutral-200 dark:border-white/10 font-sans text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed space-y-2 animate-in fade-in duration-150">
                     <p>{faq.answer}</p>
-                    <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 pt-2">
-                      &bull; SPEC_REF: {faq.num}.01_VERIFIED
+                    <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 pt-2 flex items-center justify-between">
+                      <span>&bull; SPEC_REF: {faq.num}.01_VERIFIED</span>
+                      <Link
+                        href="/app/settings"
+                        className="hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        <span>View Mathematical Derivation</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -119,8 +115,8 @@ export default function NumberedFaqSection() {
 
       {/* Bottom marker */}
       <div className="max-w-7xl w-full mx-auto border-t border-neutral-200 dark:border-white/10 pt-3 font-mono text-[11px] text-neutral-500 flex justify-between">
-        <span>011 / SPECIFICATION VERIFICATION</span>
-        <span>SCROLL FOR 012 / FINAL DIRECTIVE &darr;</span>
+        <span>006 / SPECIFICATION VERIFICATION</span>
+        <span>SCROLL FOR 007 / FINAL DIRECTIVE &darr;</span>
       </div>
     </section>
   );

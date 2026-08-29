@@ -256,6 +256,77 @@ export default function SettingsPage() {
         </form>
       </section>
 
+      {/* SM-2 Algorithm & Mathematical Deep-Dive Specification */}
+      <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-6">
+        <div className="flex items-center justify-between pb-3 border-b border-border">
+          <div>
+            <h2 className="text-sm font-bold text-text flex items-center gap-2 font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              SM-2 Algorithm &amp; Cognitive Mathematics
+            </h2>
+            <p className="text-xs text-muted-text mt-0.5">
+              Deterministic spaced repetition interval calculations powering CodeRecall.
+            </p>
+          </div>
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold border border-emerald-500/20">
+            SPEC.SM2.V2
+          </span>
+        </div>
+
+        <div className="space-y-4 font-mono text-xs">
+          {/* Mathematical Equations */}
+          <div className="p-4 rounded-lg bg-background border border-border space-y-3">
+            <div className="text-[10px] text-muted-text uppercase font-bold tracking-wider">
+              1. Interval Expansion Equation:
+            </div>
+            <div className="p-2.5 rounded bg-surface border border-border text-xs text-text space-y-1 font-mono">
+              <div>I(1) = 1 day</div>
+              <div>I(2) = 6 days</div>
+              <div>I(n) = I(n - 1) &times; EF  (for n &ge; 3)</div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-lg bg-background border border-border space-y-3">
+            <div className="text-[10px] text-muted-text uppercase font-bold tracking-wider">
+              2. Ease Factor (EF) Recalibration Formula:
+            </div>
+            <div className="p-2.5 rounded bg-surface border border-border text-xs text-text space-y-1 font-mono">
+              <div className="text-emerald-600 dark:text-emerald-400 font-bold">
+                EF&apos; = EF + (0.1 - (5 - q) &times; (0.08 + (5 - q) &times; 0.02))
+              </div>
+              <div className="text-[10px] text-muted-text">
+                Where q &isin; [0..5] (Recall Quality), and EF &ge; 1.30 (Default starting EF = 2.50).
+              </div>
+            </div>
+          </div>
+
+          {/* Self-Rating Quality Scale */}
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-text uppercase font-bold tracking-wider">
+              3. Self-Assessment Quality Metrics (q):
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div className="p-2 rounded bg-background border border-border">
+                <span className="font-bold text-rose-500">Grade 0–1 (Blackout / Major Hesitation):</span>
+                <p className="text-muted-text mt-0.5 font-sans">Interval resets to Day 1. Problem queued for immediate next-day drill.</p>
+              </div>
+              <div className="p-2 rounded bg-background border border-border">
+                <span className="font-bold text-amber-500">Grade 2–3 (Uncertain / Pass with Struggle):</span>
+                <p className="text-muted-text mt-0.5 font-sans">Interval progresses with modest Ease Factor reduction.</p>
+              </div>
+              <div className="p-2 rounded bg-background border border-border">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">Grade 4 (Good Recall):</span>
+                <p className="text-muted-text mt-0.5 font-sans">Standard exponential expansion (+6d &rarr; +16d &rarr; +40d &rarr; +90d).</p>
+              </div>
+              <div className="p-2 rounded bg-background border border-border">
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">Grade 5 (Instant Reflex):</span>
+                <p className="text-muted-text mt-0.5 font-sans">Ease Factor increments (+0.10). Interval expands with maximum velocity.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Security Credentials */}
       <section className="bg-surface rounded-xl border border-border p-6 shadow-sm space-y-4">
         <div className="pb-3 border-b border-border">
